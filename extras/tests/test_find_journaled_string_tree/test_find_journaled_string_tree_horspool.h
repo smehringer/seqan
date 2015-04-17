@@ -158,21 +158,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_horspool)
     SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 3, 5, 6, 4, 10, 21));
     SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 3, 5, 6, 5, 34, 18));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, -1, 20, 10));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 0, 41, 11));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 1, 39, 13));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 2, 85, 9));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 3, 76, 5));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 4, 50, 21));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 5, 80, 18));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, -1, 20, 10));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 0, 41, 11));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 1, 39, 13));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 2, 85, 9));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 3, 76, 5));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 4, 50, 21));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 5, 80, 18));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, -1, 0, 10));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 0, 41, 11));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 1, 2, 13));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 2, 14, 9));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 3, 18, 5));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 4, 10, 21));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 5, 34, 18));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, -1, 0, 10));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 0, 41, 11));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 1, 2, 13));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 2, 14, 9));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 3, 18, 5));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 4, 10, 21));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 5, 34, 18));
 }
 
 SEQAN_DEFINE_TEST(test_find_journaled_string_tree_ref_occ_horspool_block)
@@ -291,21 +291,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_horspool_block)
     SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 3, 5, 6, 4, 10, 21, 2));
     SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 3, 5, 6, 5, 34, 18, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, -1, 20, 10, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 0, 41, 11, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 1, 39, 13, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 2, 85, 9, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 3, 76, 5, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 4, 50, 21, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 5, 5, 80, 18, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, -1, 20, 10, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 0, 41, 11, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 1, 39, 13, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 2, 85, 9, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 3, 76, 5, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 4, 50, 21, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 5, 5, 80, 18, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, -1, 0, 10, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 0, 41, 11, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 1, 2, 13, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 2, 14, 9, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 3, 18, 5, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 4, 10, 21, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 5, 6, 5, 34, 18, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, -1, 0, 10, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 0, 41, 11, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 1, 2, 13, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 2, 14, 9, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 3, 18, 5, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 4, 10, 21, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Horspool(), 9, 6, 6, 5, 34, 18, 2));
 }
 
 #endif  // EXTRAS_TESTS_FIND_JOURNALED_STRING_TREE_TEST_FIND_JOURNALED_STRING_TREE_HORSPOOL_H_

@@ -240,21 +240,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 4, 10, 21, 0));
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 5, 34, 18, 0));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, -1, 20, 10, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 0, 41, 11, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 1, 39, 13, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 2, 85, 9, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 3, 76, 5, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 4, 50, 21, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 5, 80, 18, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, -1, 20, 10, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 0, 41, 11, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 1, 39, 13, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 2, 85, 9, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 3, 76, 5, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 4, 50, 21, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 5, 80, 18, 0));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, -1, 0, 10, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 0, 41, 11, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 1, 2, 13, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 2, 14, 9, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 3, 18, 5, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 4, 10, 21, 0));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 5, 34, 18, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, -1, 0, 10, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 0, 41, 11, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 1, 2, 13, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 2, 14, 9, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 3, 18, 5, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 4, 10, 21, 0));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 5, 34, 18, 0));
 }
 
 SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_3_errors)
@@ -291,21 +291,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 4, 10, 21, -3));
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 5, 34, 18, -3));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, -1, 20, 10, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 0, 41, 11, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 1, 39, 13, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 2, 85, 9, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 3, 76, 8, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 4, 50, 21, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 5, 80, 18, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, -1, 20, 10, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 0, 41, 11, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 1, 39, 13, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 2, 85, 9, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 3, 76, 8, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 4, 50, 21, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 5, 80, 18, -3));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, -1, 0, 10, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 0, 41, 11, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 1, 2, 13, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 2, 14, 9, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 3, 18, 8, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 4, 10, 21, -3));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 5, 34, 18, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, -1, 0, 10, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 0, 41, 11, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 1, 2, 13, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 2, 14, 9, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 3, 18, 8, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 4, 10, 21, -3));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 5, 34, 18, -3));
 }
 
 SEQAN_DEFINE_TEST(test_find_journaled_string_tree_ref_occ_myers_ukkonen_infix_0_errors_block)
@@ -506,21 +506,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 4, 10, 21, 0, 2));
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 5, 34, 18, 0, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, -1, 20, 10, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 0, 41, 11, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 1, 39, 13, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 2, 85, 9, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 3, 76, 5, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 4, 50, 21, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 5, 80, 18, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, -1, 20, 10, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 0, 41, 11, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 1, 39, 13, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 2, 85, 9, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 3, 76, 5, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 4, 50, 21, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 5, 80, 18, 0, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, -1, 0, 10, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 0, 41, 11, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 1, 2, 13, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 2, 14, 9, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 3, 18, 5, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 4, 10, 21, 0, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 5, 34, 18, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, -1, 0, 10, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 0, 41, 11, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 1, 2, 13, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 2, 14, 9, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 3, 18, 5, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 4, 10, 21, 0, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 5, 34, 18, 0, 2));
 }
 
 SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_3_errors_block)
@@ -557,21 +557,21 @@ SEQAN_DEFINE_TEST(test_find_journaled_string_tree_fuzzy_occ_myers_ukkonen_infix_
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 4, 10, 21, -3, 2));
     SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 3, 5, 6, 5, 34, 18, -3, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, -1, 20, 10, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 0, 41, 11, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 1, 39, 13, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 2, 85, 9, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 3, 76, 8, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 4, 50, 21, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 5, 5, 80, 18, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, -1, 20, 10, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 0, 41, 11, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 1, 39, 13, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 2, 85, 9, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 3, 76, 8, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 4, 50, 21, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 5, 5, 80, 18, -3, 2));
 
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, -1, 0, 10, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 0, 41, 11, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 1, 2, 13, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 2, 14, 9, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 3, 18, 8, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 4, 10, 21, -3, 2));
-    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 5, 6, 5, 34, 18, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, -1, 0, 10, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 0, 41, 11, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 1, 2, 13, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 2, 14, 9, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 3, 18, 8, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 4, 10, 21, -3, 2));
+    SEQAN_ASSERT(_configureTest(char(), seqan::Myers<seqan::FindInfix, seqan::True, void>(), 9, 6, 6, 5, 34, 18, -3, 2));
 }
 
 #endif  // EXTRAS_TESTS_FIND_JOURNALED_STRING_TREE_TEST_FIND_JOURNALED_STRING_TREE_MYERS_UKKONEN_H_

@@ -215,7 +215,7 @@ struct GetJstTraverser<Finder_<TContainer, TPattern, TSpec> >
     typedef typename ContextIteratorPosition<TFinder_>::Type TContextPosition_;
     typedef typename RequireFullContext<TFinder_>::Type TRequireContext_;
     typedef typename GetState<TFinder_>::Type TState;
-    typedef JstTraverser<TContainer, TState, JstTraverserSpec<TContextPosition_, TRequireContext_> > Type;
+    typedef JstTraverser<TContainer, TState, JstTraverserConfig<TContextPosition_, TRequireContext_> > Type;
 };
 
 // ============================================================================
@@ -270,15 +270,15 @@ execute(TResult & res,
 }
 
 // ----------------------------------------------------------------------------
-// Function deliverContext()
+// Function notify()
 // ----------------------------------------------------------------------------
 
 template <typename TContainer, typename TPattern, typename TSpec, typename TDelegate, typename TTraverser, typename TTag>
 inline typename Size<TTraverser>::Type
-deliverContext(Finder_<TContainer, TPattern, Jst<TSpec> > & finder,
-               TDelegate & delegateFunctor,
-               TTraverser & traverser,
-               TTag const & /*traverserState*/)
+notify(Finder_<TContainer, TPattern, Jst<TSpec> > & finder,
+       TDelegate & delegateFunctor,
+       TTraverser & traverser,
+       TTag const & /*traverserState*/)
 {
     typedef typename Size<TContainer>::Type TSize;
 

@@ -68,10 +68,10 @@ struct FindResultsTester_
     template <typename TTraverser>
     inline void operator()(TTraverser & traverser)
     {
-        typedef typename seqan::Positions<TTraverser>::Type TPositionVec;
+        typedef typename seqan::Position<TTraverser>::Type TPositionVec;
 
 //        std::cout << "Coverage before: " << coverage(traverser) << std::endl;
-        TPositionVec posVec = positions(traverser);
+        TPositionVec posVec = position(traverser);
 //        std::cout << "Coverage after: " << coverage(traverser) << std::endl;
 //        std::cout << "Positions:";
         for (unsigned i = 0; i < length(posVec); ++i)

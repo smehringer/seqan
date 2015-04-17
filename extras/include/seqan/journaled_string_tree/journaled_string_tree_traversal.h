@@ -277,7 +277,7 @@ struct Container<JstTraverser<TContainer, TState, TSpec> const>
 };
 
 // ----------------------------------------------------------------------------
-// Metafunction Positions
+// Metafunction Position
 // ----------------------------------------------------------------------------
 
 /*!
