@@ -114,7 +114,7 @@ public:
 
     TSize                           _blockSize;
     TSize                           _numBlocks;
-    static const TSize REQUIRE_FULL_JOURNAL = MaxValue<TSize>::VALUE;
+    static const TSize              REQUIRE_FULL_JOURNAL = MaxValue<TSize>::VALUE;
 
     JournaledStringTree() :
         _activeBlock(0),
@@ -567,7 +567,7 @@ void create(JournaledStringTree<TDeltaMap, StringTreeDefault> & stringTree,
 }
 
 template <typename TDeltaMap, typename TSize>
-void create(JournaledStringTree<TDeltaMap, StringTreeDefault> const & stringTree,
+void create(JournaledStringTree<TDeltaMap, StringTreeDefault> & stringTree,
             TSize contextSize)
 {
     create(stringTree, contextSize, Serial());
@@ -683,7 +683,8 @@ init(JournaledStringTree<TDeltaMap, TSpec> & jst,
     typedef typename Value<TStringSet>::Type TString;
 
     setValue(jst._container, varData);
-    setHost(stringSet(jst), referenceSeq);
+    TStringSet & jSet = stringSet(jst);
+    setHost(jSet, referenceSeq);
 
     TString tmp;
     setHost(tmp, host(stringSet(jst)));

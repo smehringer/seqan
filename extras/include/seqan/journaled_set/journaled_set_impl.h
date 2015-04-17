@@ -299,6 +299,14 @@ setHost(StringSet<TString, Owner<JournaledSet> > & journalSet,
     setValue(journalSet._globalRefHolder, newGlobalRef);
 }
 
+template <typename TString, typename THost>
+inline void
+setHost(StringSet<TString, Owner<JournaledSet> > & journalSet,
+        THost const & newGlobalRef)
+{
+    setValue(journalSet._globalRefHolder, newGlobalRef);
+}
+
 // ----------------------------------------------------------------------------
 // Function createHost()
 // ----------------------------------------------------------------------------

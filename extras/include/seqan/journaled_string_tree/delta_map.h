@@ -443,6 +443,8 @@ insert(DeltaMap<TValue, TAlphabet, TSpec> & deltaMap,
     typedef DeltaMap<TValue, TAlphabet, TSpec> TDeltaMap;
     typedef typename Iterator<TDeltaMap, Standard>::Type TMapIterator;
     typedef typename Member<TDeltaMap, DeltaMapStoreMember>::Type TDeltaStore;
+    typedef typename Member<TDeltaMap, DeltaMapStoreMember>::Type TDeltaEntries;
+    typedef typename Position<TDeltaEntries>::Type TEntriesPos;
     typedef typename Position<TDeltaStore>::Type TStorePos;
     typedef typename Value<TDeltaMap>::Type TEntry;
     typedef typename DeltaRecord<TEntry>::Type TDeltaRecord;
@@ -460,9 +462,10 @@ insert(DeltaMap<TValue, TAlphabet, TSpec> & deltaMap,
         return begin(deltaMap, Standard());
     }
     // First we need to search for the insert position.
-    TMapIterator mapIt = find(deltaMap, deltaPos);
-    insertValue(deltaMap._entries, mapIt - begin(deltaMap, Standard()),
-                TEntry(deltaPos, TDeltaRecord(selectDeltaType(deltaType), storePos), coverage));
+    TEntriesPos iPos = find(deltaMap, deltaPos) - begin(deltaMap, Standard());
+    insertValue(deltaMap._entries, iPos, TEntry(deltaPos, TDeltaRecord(selectDeltaType(deltaType), storePos), coverage));
+    // We want to set the coverage to the correct value without copying it.
+    TMapIterator mapIt = iter(deltaMap, iPos, Standard());
     resize(deltaCoverage(mapIt), getCoverageSize(deltaMap), false, Exact());
     return mapIt;
 }
