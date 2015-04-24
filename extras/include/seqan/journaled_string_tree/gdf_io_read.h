@@ -246,6 +246,7 @@ readHeader(GdfHeader & gdfHeader,
     _readGdfHeaderRefInfo(gdfHeader, config, reader);
 
     _readSeqNames(gdfHeader, reader);
+    setCoverageSize(config, length(gdfHeader.nameStore));
 }
 
 // ----------------------------------------------------------------------------

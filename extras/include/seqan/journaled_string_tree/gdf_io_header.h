@@ -104,28 +104,29 @@ struct GdfFileConfiguration
      * @fn GdfFileConfiguration::GdfFileConfiguration
      * @brief The constructor.
      *
-     * @signature GfgFileConfiguration(coverageSize);
+     * @signature GfgFileConfiguration();
      * 
-     * @param coverageSize The number of sequences represented by the @link DeltaMap @endlink.
      */
-    template <typename TCoverageSize>
-    GdfFileConfiguration(TCoverageSize coverageSize) :
+    GdfFileConfiguration() :
         isLittleEndian(true),
         refHash(0),
         blockSize(100000),
         compressionMode(GdfCompressionMode<BitsPerValue<TSnpValue>::VALUE>::VALUE)
-    {
-        if (coverageSize <= MaxValue<__uint8>::VALUE)
-            coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_1_BYTE_PER_VALUE;
-        else if (coverageSize <= MaxValue<__uint16>::VALUE)
-            coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_2_BYTE_PER_VALUE;
-        else if (coverageSize <= MaxValue<__uint32>::VALUE)
-            coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_4_BYTE_PER_VALUE;
-        else
-            coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_8_BYTE_PER_VALUE;
-    }
-
+    {}
 };
+
+template <typename TSpec, typename TSize>
+inline void setCoverageSize(GdfFileConfiguration<TSpec> & config, TSize coverageSize)
+{
+    if (coverageSize <= MaxValue<__uint8>::VALUE)
+        config.coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_1_BYTE_PER_VALUE;
+    else if (coverageSize <= MaxValue<__uint16>::VALUE)
+        config.coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_2_BYTE_PER_VALUE;
+    else if (coverageSize <= MaxValue<__uint32>::VALUE)
+        config.coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_4_BYTE_PER_VALUE;
+    else
+        config.coverageCompression = GdfIOMode::COVERAGE_COMPRESSION_8_BYTE_PER_VALUE;
+}
 
 // ----------------------------------------------------------------------------
 // Class GdfHeader
