@@ -1,0 +1,19 @@
+LAGAN ALGORITHM
+=====================================================
+# Reading in Sequences...
+# Length of Sequences. SeqH: 32  SeqV: 30
+# Computing Alignment...
+# # Step 1: Seeding...
+				Mon Apr 27 18:17:00 2015
+# # # ---> progress:	3 %# # # ---> progress:	6 %# # # ---> progress:	10 %# # # ---> progress:	13 %# # # ---> progress:	16 %# # # ---> progress:	20 %# # # ---> progress:	23 %# # # ---> progress:	26 %# # # ---> progress:	30 %# # # ---> progress:	33 %# # # ---> progress:	36 %# # # ---> progress:	40 %# # # ---> progress:	43 %# # # ---> progress:	46 %# # # ---> progress:	50 %# # # ---> progress:	53 %# # # ---> progress:	56 %# # # ---> progress:	60 %# # # ---> progress:	63 %# # # ---> progress:	66 %# # # ---> progress:	70 %# # # ---> progress:	73 %# # # ---> progress:	76 %# # # ---> progress:	80 %# # # ---> progress:	83 %# # # ---> progress:	86 %# # # ---> progress:	90 %# # # ---> progress:	93 %# # # ---> progress:	96 %# # # ---> progress:	100 %
+# # # Found 6 seeds.
+# # Step 2: Chaining...
+				Mon Apr 27 18:17:00 2015
+# # # 2 seeds remained
+# # Step 3: Aligning...
+				Mon Apr 27 18:17:00 2015
+				Mon Apr 27 18:17:00 2015
+# Alignment Score: -28
+# Writing Alignment into file: ex.fa
+=====================================================
+DONE
