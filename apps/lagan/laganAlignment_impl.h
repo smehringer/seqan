@@ -108,9 +108,9 @@ void timestamp()
  * seqH and afterwards occurences of common subsequences of size q are added
  * to a seedSet.
  */
-template<typename TSeed, typename TSeq, typename TScore, typename TInfix, typename TIndexTag>
+template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
 int seeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
-            TInfix & seqV, TScore & scoreScheme, unsigned q, TIndexTag /*tag*/)
+            TInfix & seqV, unsigned q, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
     typedef typename Iterator<TInfix>::Type TIterator;
@@ -144,10 +144,9 @@ int seeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
  * seqH and afterwards occurences of common subsequences of size q are added
  * to a seedSet.
  */
-template<typename TSeed, typename TSeq, typename TScore, typename TInfix, typename TIndexTag>
+template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
 int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV, 
-                    TScore & scoreScheme, unsigned q,
-                    unsigned num_threads, TIndexTag /*tag*/)
+                    unsigned q, unsigned num_threads, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
     typedef typename Iterator<TInfix>::Type TIterator;
@@ -223,7 +222,7 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
 // ----------------------------------------------------------------------------
 template<typename TPair, typename TSeq>
 int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & posH,
-						TSeq & seqV, TSeq & seqH, unsigned q)
+						TSeq & seqV, TSeq & seqH, unsigned qV, unsigned qH)
 {
 	// posV and posH store the begin and end positions of seeds
 	// when seeds are chained globally, sorting the positions will lead
@@ -235,15 +234,17 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 	// compute search fields
 	for (unsigned j = 0; j < length(posV); ++j)
 	{
-	    if (posH[j].i1 - bPH >= q and posV[j].i1 - bPV >= q)
+	    if (posH[j].i1 - bPH >= qH and posV[j].i1 - bPV >= qV)
 	    {
 	        SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
+	        SEQAN_ASSERT_LEQ(bPH, posH[j].i1);
+	        SEQAN_ASSERT_LEQ(bPV, posV[j].i1);
 	        appendValue(fields, field);
 	    }
 	    bPH = posH[j].i2;
 	    bPV = posV[j].i2;
 	}
-	if (length(seqH)-1-bPH >= q and length(seqV)-1-bPV >= q)
+	if (length(seqH)-1-bPH >= qH and length(seqV)-1-bPV >= qV)
 	{
 	    SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
 	    appendValue(fields, last);
@@ -259,9 +260,9 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
  * boundaries are used to create sequence infixes that are each given to the 
  * seeding() function to process.
  */
-template<typename TSeed, typename TSeq, typename TScore>
-int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, 
-            TSeq & seqV, TScore & scoreScheme, String<unsigned> & lagan_parameter)
+template<typename TSeed, typename TSeq>
+int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
+					 String<unsigned> & lagan_parameter)
 {
     typedef SeedSet<TSeed> TSeedSet;
     typedef Pair<unsigned, unsigned> TPair;
@@ -282,7 +283,26 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
         std::cout << "q = " << q << std::endl;
 
         clear(fields);
-        computeSearchFields(fields, posV, posH, seqV, seqH, q);
+        sort(posV);
+		sort(posH);
+		unsigned bPH = 0; // initial begin Position H
+		unsigned bPV = 0; // initial begin Position V
+		// compute search fields
+		for (unsigned j = 0; j < length(posV); ++j)
+		{
+			if (posH[j].i1 - bPH >= q and posV[j].i1 - bPV >= q)
+			{
+				SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
+				appendValue(fields, field);
+			}
+			bPH = posH[j].i2;
+			bPV = posV[j].i2;
+		}
+		if (length(seqH)-1-bPH >= q and length(seqV)-1-bPV >= q)
+		{
+			SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
+			appendValue(fields, last);
+		}
 
         // search seeds within search fields
         for (unsigned sf = 0; sf < length(fields); ++sf)
@@ -294,27 +314,27 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
 
             //generate seeds
             if(q < closedAdressingLimit)
-                parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, scoreScheme, lagan_parameter[i], 1, Default());
+                seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
             else
-            	parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, scoreScheme, lagan_parameter[i], 1,OpenAddressing()); /*
-            //generate seeds
+            	seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+
+/*            //generate seeds
             if(q < closedAdressingLimit)
-                parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, scoreScheme, lagan_parameter[i], 8, Default());
+            	parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], 1, Default());
             else
-                parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, scoreScheme, lagan_parameter[i], 8, OpenAddressing());
+                parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], 1, OpenAddressing());
 */
             //chain temporary seeds globally
             if(length(tmp_seedSet) != 0)
                 chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
 
             for (unsigned j = 0; j < length(tmp_seedChain); ++j)
-            {
                 std::cout << tmp_seedChain[j] << std::endl;
-            }
+
             //add remaining seeds to global seedSet
             for (unsigned j = 0; j < length(tmp_seedChain); ++j)
             {
-                TSeed seed = tmp_seedChain[j];
+                TSeed & seed = tmp_seedChain[j];
                 TPair pairH(beginPositionH(seed), endPositionH(seed));
                 TPair pairV(beginPositionV(seed), endPositionV(seed));
                 appendValue(posH, pairH);
@@ -330,22 +350,88 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
 // ----------------------------------------------------------------------------
 // Function transformIntoJournal()
 // ----------------------------------------------------------------------------
-template<typename TChain, typename TSeq>
-int transformIntoJournal(TChain & seedChain, TSeq & host, TSeq & sequence)
+template<typename TSeed, typename TSeq>
+int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence)
 {
     typedef String<TSeq, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
-    //typedef typename Host<TJournaledString>::Type THost;
-	// assume seedChain is sorted by SeqV positions
+    typedef Pair<unsigned, unsigned> TPair;
+    typedef StringSet<TPair> TPairSet;
 
     TJournaledString journal;
     setHost(journal, host);
 
+    StringSet<SearchField> fields;
+    TPairSet posV;
+    TPairSet posH;
+
     for (unsigned i = 0; i < length(seedChain); ++i)
     {
-
+    	TSeed & seed = seedChain[i];
+		TPair pairH(beginPositionH(seed), endPositionH(seed));
+		TPair pairV(beginPositionV(seed), endPositionV(seed));
+		appendValue(posH, pairH);
+		appendValue(posV, pairV);
     }
+
+    computeSearchFields(fields, posV, posH, sequence, host, 1, 0);
+    computeDeletions(fields, posV, posH, sequence, host);
+
+    // transform search fields into delta events in a journaled String
+    for (unsigned sf = 0; sf < length(fields); ++sf)
+	{
+    	unsigned eH = fields[sf].endH;
+    	unsigned bH = fields[sf].beginH;
+    	unsigned eV = fields[sf].endV;
+    	unsigned bV = fields[sf].beginV;
+    	if(eV-bV == 1 && eH-bH == 1)
+    	{
+    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
+    		SEQAN_ASSERT_EQ(bH, bV);
+    		SEQAN_ASSERT_EQ(eH, eV);
+    	}
+    	else
+    	{
+    		if (eV-bV > 1)
+    			std::cout << "Insertion at " << bV << " " << infix(sequence, bV, eV) << std::endl;
+    		if (eH-bH > 1)
+    		{
+    			std::cout << "Deletion at " << bH << " " << infix(host, bH, eH) << std::endl;
+    		}
+    	}
+	}
+
     return 0;
 }
+
+// ----------------------------------------------------------------------------
+// Function computeSearchFields()
+// ----------------------------------------------------------------------------
+template<typename TPair, typename TSeq>
+int computeDeletions(StringSet<SearchField> & fields, TPair & posV, TPair & posH,
+						TSeq & seqV, TSeq & seqH)
+{
+	// posV and posH are already sorted from before!
+	unsigned bPH = 0; // initial begin Position H
+	unsigned bPV = 0; // initial begin Position V
+	// compute search fields
+	for (unsigned j = 0; j < length(posV); ++j)
+	{
+	    if (posH[j].i1 - bPH >= 1 and posV[j].i1 - bPV == 0)
+	    {
+	        SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
+	        appendValue(fields, field);
+	    }
+	    bPH = posH[j].i2;
+	    bPV = posV[j].i2;
+	}
+	if (length(seqH)-1-bPH >= 1 and length(seqV)-1-bPV == 0)
+	{
+	    SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
+	    appendValue(fields, last);
+	}
+	return 0;
+}
+
 // ----------------------------------------------------------------------------
 // Function computelaganAlignment()                                     [Align]
 // ----------------------------------------------------------------------------
@@ -372,7 +458,7 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     // -----------------------------------------------------------------------
     std::cout << "# # Step 1: Iterative Seeding and Chaining...\n";
     timestamp();
-    iterativeSeeding(seedSet, seqH, seqV, scoreSchemeAnchor, lagan_parameter);
+    iterativeSeeding(seedSet, seqH, seqV, lagan_parameter);
 
     // -----------------------------------------------------------------------
     // Step 2: Compute global chain
@@ -384,6 +470,7 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     //for (unsigned i = 0; i < length(seedChain); ++i)
       //  std::cout << seedChain[i] << std::endl;
     std::cout << "# # # " << length(seedChain) << " seeds remained\n";
+    transformIntoJournal(seedChain, seqH, seqV);
 
     // -----------------------------------------------------------------------
     // Step 3: Compute Alignment
