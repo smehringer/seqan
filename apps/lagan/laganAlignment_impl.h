@@ -394,7 +394,7 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     int result = bandedChainAlignment(alignment, seedChain, scoreSchemeAnchor,
                                       scoreSchemeGap, alignConfig, bandExtension);
 
-    timestamp();
+    //timestamp();
     return result;
 }
 
