@@ -85,29 +85,14 @@ using namespace seqan;
  * @see chainSeedsGlobally
  * @see bandedChainAlignment
  */
-// given every argument
-template<typename TSequence, typename TAlignSpec, typename TScoreValue, 
-         typename TScoreSpecAnchor, typename TScoreSpecGap>
-int laganAlignment(Align<TSequence, TAlignSpec> & alignment,
-		           String<unsigned> & lagan_parameter,
-                   Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor,
-                   Score<TScoreValue, TScoreSpecGap> const & scoreSchemeGap,
-                   unsigned bandExtension = 15)
-{
-    int result = computelaganAlignment(alignment, lagan_parameter, scoreSchemeAnchor, 
-                                       scoreSchemeGap, bandExtension);
-    return result;
-}
 
 // given only one scoring scheme
 template<typename TSequence, typename TAlignSpec, typename TScoreValue, 
          typename TScoreSpecAnchor>
 int laganAlignment(Align<TSequence, TAlignSpec> & alignment,
                    String<unsigned> & lagan_parameter,
-                   Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor,
-                   unsigned bandExtension = 15)
+                   Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor)
 {
-    int result = computelaganAlignment(alignment, lagan_parameter, scoreSchemeAnchor, 
-                                       scoreSchemeAnchor, bandExtension);
+    int result = computelaganAlignment(alignment, lagan_parameter, scoreSchemeAnchor);
     return result;
 }

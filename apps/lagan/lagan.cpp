@@ -198,8 +198,7 @@ int main(int argc, char const ** argv)
     // Compute Alignment
     // -----------------------------------------------------------------------
     std::cout << "# Computing Alignment...\n";
-    int result = laganAlignment(alignment, options.lagan_parameter, scoreScheme, 
-                                options.bandExtension);
+    int result = laganAlignment(alignment, options.lagan_parameter, scoreScheme);
     std::cout << "# Alignment Score: " << result << std::endl;
 
     std::cout << "=====================================================\n" << "DONE\n";

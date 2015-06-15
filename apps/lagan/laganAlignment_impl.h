@@ -124,13 +124,18 @@ int seeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
     hashInit(indexShape(index), begin(seqV));
     for(TIterator it = begin(seqV); it != (end(seqV)-q+1); goNext(it))
     {
+    	unsigned repeat_limit = 0;
         hashNext(indexShape(index), it);
         TOccurrences occs = getOccurrences(index, indexShape(index));
         for (unsigned i = 0; i < length(occs); ++i)
         {
-            TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
-            if (!addSeed(seedSet, seed, distance, Merge()))
-                addSeed(seedSet, seed, Single());
+        	if (beginPosition(seqH) + occs[i] > repeat_limit)
+        	{
+				TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
+				if (!addSeed(seedSet, seed, distance, Merge()))
+					addSeed(seedSet, seed, Single());
+        	}
+        	repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
         }
     }
     return 0;
@@ -216,6 +221,78 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
     return 0;
 }
 
+// ----------------------------------------------------------------------------
+// Function scoreSeed()
+// ----------------------------------------------------------------------------
+template<typename TSeed>
+int scoreSeed(TSeed & seed)
+{
+	unsigned n = seedSize(seed);
+	SEQAN_ASSERT_EQ(upperDiagonal(seed), lowerDiagonal(seed));
+
+	int score = n - n * abs(lowerDiagonal(seed));
+	return (score);
+}
+
+// ----------------------------------------------------------------------------
+// Function fastFirstSeeding()
+// ----------------------------------------------------------------------------
+template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
+int fastFirstSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
+                     unsigned q, TIndexTag /*tag*/)
+{
+	typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
+	typedef typename Iterator<TInfix>::Type TIterator;
+	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
+
+	unsigned distance = 0;
+
+	TIndex index(seqH);
+	resize(indexShape(index),q);
+	typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
+
+	TIterator it = begin(seqV);
+	while (position(it, seqV) < length(seqV)-q+1)
+	{
+		hash(shape, it);
+		TOccurrences occs = getOccurrences(index, shape);
+		int max_score = -maxValue<int>();
+		unsigned offset = 1;
+		unsigned repeat_limit = 0;
+
+		// if there are no hits the offset is 1 otherwise its the end position
+		// of the best scoring seed.
+		// This way long runs will speed up seeding and result in less memory
+		// usage.
+		for (unsigned i = 0; i < length(occs); ++i)
+		{
+			// avoid repeats:
+			// a repeat can be identified if the subsequent seed is found within
+			// the preceding seed (endPos(pre_seed) > beginPos(post_seed)
+			// the next if clause therefore is avoiding repeats
+			if (beginPosition(seqH)+occs[i] > repeat_limit)
+			{
+				//todo:: ignore repeats with a if clause
+				TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
+				extendSeed(seed, seqH, seqV, EXTEND_BOTH, MatchExtend());
+
+				if (!addSeed(seedSet, seed, distance, Merge()))
+					addSeed(seedSet, seed, Single());
+
+				int score = scoreSeed(seed);
+
+				if (score > max_score)
+				{
+					max_score = score;
+					offset = endPositionV(seed) - position(it, seqV); // cannot take length of seed because it extendeds to BOTH ends
+				}
+			}
+			repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
+		}
+		it += offset;
+	}
+    return 0;
+}
 
 // ----------------------------------------------------------------------------
 // Function computeSearchFields()
@@ -234,7 +311,10 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 	// compute search fields
 	for (unsigned j = 0; j < length(posV); ++j)
 	{
-	    if (posH[j].i1 - bPH >= qH and posV[j].i1 - bPV >= qV)
+		// if clause must avoid that a search field can have 0
+		// characters if qV and qH are 0
+	    if ((posH[j].i1 - bPH > qH and posV[j].i1 - bPV >= qV) or
+	    	(posH[j].i1 - bPH >= qH and posV[j].i1 - bPV > qV))
 	    {
 	        SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
 	        SEQAN_ASSERT_LEQ(bPH, posH[j].i1);
@@ -244,7 +324,8 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 	    bPH = posH[j].i2;
 	    bPV = posV[j].i2;
 	}
-	if (length(seqH)-1-bPH >= qH and length(seqV)-1-bPV >= qV)
+	if ((length(seqH)-1-bPH > qH and length(seqV)-1-bPV >= qV) or
+		(length(seqH)-1-bPH >= qH and length(seqV)-1-bPV > qV))
 	{
 	    SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
 	    appendValue(fields, last);
@@ -276,6 +357,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
     TPairSet posV;
     TPairSet posH;
     StringSet<SearchField> fields;
+    bool first = true; // to use fast seeding in the beginning
 
     for(unsigned i = 0; i < length(lagan_parameter); ++i)
     {
@@ -283,26 +365,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
         std::cout << "q = " << q << std::endl;
 
         clear(fields);
-        sort(posV);
-		sort(posH);
-		unsigned bPH = 0; // initial begin Position H
-		unsigned bPV = 0; // initial begin Position V
-		// compute search fields
-		for (unsigned j = 0; j < length(posV); ++j)
-		{
-			if (posH[j].i1 - bPH >= q and posV[j].i1 - bPV >= q)
-			{
-				SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
-				appendValue(fields, field);
-			}
-			bPH = posH[j].i2;
-			bPV = posV[j].i2;
-		}
-		if (length(seqH)-1-bPH >= q and length(seqV)-1-bPV >= q)
-		{
-			SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
-			appendValue(fields, last);
-		}
+        computeSearchFields(fields, posV, posH, seqV, seqH, q, q);
 
         // search seeds within search fields
         for (unsigned sf = 0; sf < length(fields); ++sf)
@@ -314,9 +377,20 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
 
             //generate seeds
             if(q < closedAdressingLimit)
-                seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
+            {
+            	if (first)
+            		fastFirstSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
+            	else
+                    seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
+            }
             else
-            	seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+            {
+            	if (first)
+					fastFirstSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+				else
+            	    seeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+            }
+            first = false;
 
 /*            //generate seeds
             if(q < closedAdressingLimit)
@@ -348,7 +422,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
 }
 
 // ----------------------------------------------------------------------------
-// Function transformIntoJournal()
+// Function transformIntoJournal()sf == 0
 // ----------------------------------------------------------------------------
 template<typename TSeed, typename TSeq>
 int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence)
@@ -373,10 +447,11 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
 		appendValue(posV, pairV);
     }
 
-    computeSearchFields(fields, posV, posH, sequence, host, 1, 0);
-    computeDeletions(fields, posV, posH, sequence, host);
+    computeSearchFields(fields, posV, posH, sequence, host, 0, 0);
+    //computeDeletions(fields, posV, posH, sequence, host);
 
     // transform search fields into delta events in a journaled String
+    unsigned vp = 0; // stores virtual position when altering the journaled string
     for (unsigned sf = 0; sf < length(fields); ++sf)
 	{
     	unsigned eH = fields[sf].endH;
@@ -386,19 +461,34 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
     	if(eV-bV == 1 && eH-bH == 1)
     	{
     		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
-    		SEQAN_ASSERT_EQ(bH, bV);
-    		SEQAN_ASSERT_EQ(eH, eV);
+    		//if (bH != bV)
+    			//std::cout << "oh oh " << std::endl;
+    		//SEQAN_ASSERT_EQ(bH, bV); does not work if not on main diagonal
+    		//SEQAN_ASSERT_EQ(eH, eV);
+    		erase(journal, vp+bH, vp+bH+1);
+    		insert(journal, vp+bH, sequence[bV]);
+    		// no update of the virtual position needed
     	}
     	else
     	{
-    		if (eV-bV > 1)
-    			std::cout << "Insertion at " << bV << " " << infix(sequence, bV, eV) << std::endl;
     		if (eH-bH > 1)
+			{
+				std::cout << "Deletion at " << bH << " " << infix(host, bH, eH) << std::endl;
+				erase(journal, vp+bH, vp+eH);
+				vp -= (eH-bH);
+			}
+    		if (eV-bV > 1)
     		{
-    			std::cout << "Deletion at " << bH << " " << infix(host, bH, eH) << std::endl;
+    			std::cout << "Insertion at " << bV << " " << infix(sequence, bV, eV) << std::endl;
+    			insert(journal, vp+bV, vp+eV);
+    			vp += (eV-bV);
     		}
     	}
 	}
+    //std::cout << "Host: " << host << std::endl;
+    //std::cout << "Journal: " << journal << std::endl;
+    //std::cout << "Nodes: " << journal._journalEntries << std::endl;
+    //std::cout << std::endl;
 
     return 0;
 }
@@ -419,6 +509,8 @@ int computeDeletions(StringSet<SearchField> & fields, TPair & posV, TPair & posH
 	    if (posH[j].i1 - bPH >= 1 and posV[j].i1 - bPV == 0)
 	    {
 	        SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
+	        SEQAN_ASSERT_LEQ(bPH, posH[j].i1);
+	        SEQAN_ASSERT_LEQ(bPV, posV[j].i1);
 	        appendValue(fields, field);
 	    }
 	    bPH = posH[j].i2;
@@ -437,12 +529,10 @@ int computeDeletions(StringSet<SearchField> & fields, TPair & posV, TPair & posH
 // ----------------------------------------------------------------------------
 //main
 template<typename TSequence, typename TAlignSpec, typename TScoreValue, 
-         typename TScoreSpecAnchor, typename TScoreSpecGap>
+         typename TScoreSpecAnchor>
 int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
 						  String<unsigned> & lagan_parameter,
-                          Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor,
-                          Score<TScoreValue, TScoreSpecGap> const & scoreSchemeGap,
-                          unsigned bandExtension)
+                          Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor)
 {
     typedef Seed<Simple> TSeed;
 
@@ -475,14 +565,15 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     // -----------------------------------------------------------------------
     // Step 3: Compute Alignment
     // -----------------------------------------------------------------------
-    std::cout << "# # Step 3: Aligning...\n";
+    /*std::cout << "# # Step 3: Aligning...\n";
     timestamp();
     AlignConfig<false, false, false, false> alignConfig;
     int result = bandedChainAlignment(alignment, seedChain, scoreSchemeAnchor,
                                       scoreSchemeGap, alignConfig, bandExtension);
+                                      */
 
     //timestamp();
-    return result;
+    return 0;
 }
 
 #endif //SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL_H
