@@ -34,13 +34,13 @@
 // This File implements the LAGAN Algorithm.
 // The laganAlignment() function computes a pairwise global alignment
 // given two sequences of the same type. First an QGramIndex
-// is build over one sequenced and then the second is queried for common seeds. 
-// The retrieved seeds are then chained globally and an alignment using 
+// is build over one sequenced and then the second is queried for common seeds.
+// The retrieved seeds are then chained globally and an alignment using
 // bandedChainAlignment is computed.
 // ==========================================================================
 
-#ifndef SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL_H
-#define SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL_H
+#ifndef SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL2_H
+#define SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL2_H
 
 #include <seqan/stream.h>
 #include <seqan/seq_io.h>
@@ -74,7 +74,7 @@ using namespace seqan;
 struct SearchField
 {
     // positions of search field
-    unsigned beginH, endH, beginV, endV; 
+    unsigned beginH, endH, beginV, endV;
 
     SearchField(unsigned bH, unsigned bV, unsigned eH, unsigned eV) :
         beginH(bH), endH(eH), beginV(bV), endV(eV)
@@ -124,18 +124,18 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
     hashInit(indexShape(index), begin(seqV));
     for(TIterator it = begin(seqV); it != (end(seqV)-q+1); goNext(it))
     {
-    	//unsigned repeat_limit = 0;
+    	unsigned repeat_limit = 0;
         hashNext(indexShape(index), it);
         TOccurrences occs = getOccurrences(index, indexShape(index));
         for (unsigned i = 0; i < length(occs); ++i)
         {
-        	//if (beginPosition(seqH) + occs[i] >= repeat_limit)
-        	//{
+        	if (beginPosition(seqH) + occs[i] > repeat_limit)
+        	{
 				TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
 				if (!addSeed(seedSet, seed, distance, Merge()))
 					addSeed(seedSet, seed, Single());
-        	//}
-        	//repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
+        	}
+        	repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
         }
     }
     return 0;
@@ -150,7 +150,7 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
  * to a seedSet.
  */
 template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV, 
+int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
                     unsigned q, unsigned num_threads, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
@@ -203,7 +203,7 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
         std::cout << length(tmp_sets[t]) << std::endl;
         for (TIter it = begin(tmp_sets[t], Standard()); it != end(tmp_sets[t], Standard()); ++it)
         {
-            
+
             TSeed seed = *it;
             // if begin position of seed lies whithin an overlay area it must be merged
             if (beginPositionV(seed) < (t * (int)(length(seqV)/num_threads) + q + distance))
@@ -237,11 +237,12 @@ int scoreSeed(TSeed & seed)
 // ----------------------------------------------------------------------------
 // Function fastFirstSeeding()
 // ----------------------------------------------------------------------------
-template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int fastFirstSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
-                     unsigned q, TIndexTag /*tag*/)
+template<typename TSeed, /*typename TIndex,*/ typename TSeq, typename TInfix>
+int fastFirstSeeding(SeedSet<TSeed> & seedSet, /*TIndex & index, */TSeq & seqH,
+		             TInfix & seqV, unsigned q)
 {
-	typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
+	typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing()> > TIndex;
+
 	typedef typename Iterator<TInfix>::Type TIterator;
 	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
 
@@ -337,26 +338,22 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 /*
  * This function enables an iterative loop when finding seeds. At first, search
  * fields are calculated between previously found seeds. The search field
- * boundaries are used to create sequence infixes that are each given to the 
+ * boundaries are used to create sequence infixes that are each given to the
  * seeding() function to process.
  */
-template<typename TSeed, typename TSeq>
-int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
-					 String<unsigned> & lagan_parameter)
+template<typename TSeed, typename TPairSet, typename TSeq>
+int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
+		             TSeq & seqH, TSeq & seqV, String<unsigned> & lagan_parameter)
 {
     typedef SeedSet<TSeed> TSeedSet;
-    typedef Pair<unsigned, unsigned> TPair;
-    typedef StringSet<TPair> TPairSet;
+	typedef Pair<unsigned, unsigned> TPair;
     typedef typename Infix<TSeq>::Type TInfix;
     typedef typename Value<TSeq>::Type TAlphabet;
 
     unsigned alphSize = ValueSize<TAlphabet>::VALUE;
     unsigned closedAdressingLimit = (int)(log(4000000000)/log(alphSize)); // replace 4000000000 ?
 
-    TPairSet posV;
-    TPairSet posH;
     StringSet<SearchField> fields;
-    bool first = true;
 
     for(unsigned i = 0; i < length(lagan_parameter); ++i)
     {
@@ -377,19 +374,12 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
             //generate seeds
             if(q < closedAdressingLimit)
             {
-            	if (first)
-            		fastFirstSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
-            	else
-            		nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
+            	nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
             }
             else
             {
-            	if (first)
-            		fastFirstSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
-            	else
-            		nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+            	nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
             }
-            first = false;
 
 /*            //generate seeds
             if(q < closedAdressingLimit)
@@ -421,7 +411,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TSeq & seqV,
 }
 
 // ----------------------------------------------------------------------------
-// Function transformIntoJournal()sf == 0
+// Function transformIntoJournal()
 // ----------------------------------------------------------------------------
 template<typename TSeed, typename TSeq>
 int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence)
@@ -493,61 +483,68 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
 }
 
 // ----------------------------------------------------------------------------
-// Function computeSearchFields()
+// Function seeding()
 // ----------------------------------------------------------------------------
-template<typename TPair, typename TSeq>
-int computeDeletions(StringSet<SearchField> & fields, TPair & posV, TPair & posH,
-						TSeq & seqV, TSeq & seqH)
+template<typename TSeed, typename TIndex, typename TSeq>
+int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
+					 String<unsigned> & lagan_parameter)
 {
-	// posV and posH are already sorted from before!
-	unsigned bPH = 0; // initial begin Position H
-	unsigned bPV = 0; // initial begin Position V
-	// compute search fields
-	for (unsigned j = 0; j < length(posV); ++j)
-	{
-	    if (posH[j].i1 - bPH >= 1 and posV[j].i1 - bPV == 0)
-	    {
-	        SearchField field(bPH, bPV, posH[j].i1, posV[j].i1);
-	        SEQAN_ASSERT_LEQ(bPH, posH[j].i1);
-	        SEQAN_ASSERT_LEQ(bPV, posV[j].i1);
-	        appendValue(fields, field);
-	    }
-	    bPH = posH[j].i2;
-	    bPV = posV[j].i2;
-	}
-	if (length(seqH)-1-bPH >= 1 and length(seqV)-1-bPV == 0)
-	{
-	    SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
-	    appendValue(fields, last);
-	}
-	return 0;
-}
+	typedef SeedSet<TSeed> TSeedSet;
+	typedef String<TSeed> TSeedChain;
+	typedef Pair<unsigned, unsigned> TPair;
+	typedef StringSet<TPair> TPairSet;
 
+	TSeedSet tmp_seedSet;
+	TSeedChain tmp_seedChain;
+	TPairSet posV;
+	TPairSet posH;
+
+	fastFirstSeeding(tmp_seedSet, /*index, */seqH, seqV, lagan_parameter[0]);
+
+	if(length(tmp_seedSet) != 0)
+	    chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
+
+	for (unsigned j = 0; j < length(tmp_seedChain); ++j)
+	{
+		TSeed & seed = tmp_seedChain[j];
+		TPair pairH(beginPositionH(seed), endPositionH(seed));
+		TPair pairV(beginPositionV(seed), endPositionV(seed));
+		appendValue(posH, pairH);
+		appendValue(posV, pairV);
+		addSeed(seedSet, seed, Single());
+	}
+
+	iterativeSeeding(seedSet, posV, posH, seqH, seqV, lagan_parameter);
+}
 // ----------------------------------------------------------------------------
 // Function computelaganAlignment()                                     [Align]
 // ----------------------------------------------------------------------------
 //main
-template<typename TSequence, typename TAlignSpec, typename TScoreValue, 
+template<typename TSequence, typename TAlignSpec, typename TScoreValue,
          typename TScoreSpecAnchor>
 int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
 						  String<unsigned> & lagan_parameter,
                           Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor)
 {
     typedef Seed<Simple> TSeed;
-
     typedef SeedSet<TSeed> TSeedSet;
+    typedef Index<TSequence, IndexQGram<SimpleShape, Default()> > TIndex;
+
 
     StringSet<TSequence> seqs = stringSet(alignment);
     TSequence seqH = seqs[0];
     TSequence seqV = seqs[1];
     TSeedSet seedSet;
 
+    TIndex index(seqH);
+    resize(indexShape(index), lagan_parameter[0]);
+
     // -----------------------------------------------------------------------
     // Step 1: Build index and scan query for seeds
     // -----------------------------------------------------------------------
     std::cout << "# # Step 1: Iterative Seeding and Chaining...\n";
     timestamp();
-    iterativeSeeding(seedSet, seqH, seqV, lagan_parameter);
+    seeding(seedSet, index, seqH, seqV, lagan_parameter);
 
     // -----------------------------------------------------------------------
     // Step 2: Compute global chain
@@ -571,4 +568,4 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     return 0;
 }
 
-#endif //SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL_H
+#endif //SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL2_H
