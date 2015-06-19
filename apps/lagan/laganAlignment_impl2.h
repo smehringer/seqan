@@ -63,7 +63,18 @@ using namespace seqan;
 // ============================================================================
 // Tags, Classes, Enums
 // ============================================================================
-
+/*
+struct CompareByPosAndTypeLessThan_
+{
+	template <typename TRecord>
+	inline bool operator()(TRecord const &lhs, TRecord const &rhs)
+	{
+		if (lhs.pos == rhs.pos)
+			return lhs.type < rhs.type;
+		return lhs.pos < rhs.pos;
+	}
+};
+*/
 // ----------------------------------------------------------------------------
 // Struct SearchField
 // ----------------------------------------------------------------------------
@@ -237,19 +248,19 @@ int scoreSeed(TSeed & seed)
 // ----------------------------------------------------------------------------
 // Function fastFirstSeeding()
 // ----------------------------------------------------------------------------
-template<typename TSeed, /*typename TIndex,*/ typename TSeq, typename TInfix>
-int fastFirstSeeding(SeedSet<TSeed> & seedSet, /*TIndex & index, */TSeq & seqH,
+template<typename TSeed, typename TIndex, typename TSeq, typename TInfix>
+int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
 		             TInfix & seqV, unsigned q)
 {
-	typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing()> > TIndex;
+	//typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
 
 	typedef typename Iterator<TInfix>::Type TIterator;
 	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
 
 	unsigned distance = 0;
 
-	TIndex index(seqH);
-	resize(indexShape(index),q);
+	//TIndex index(seqH);
+	//resize(indexShape(index),q);
 	typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
 
 	TIterator it = begin(seqV);
@@ -324,10 +335,10 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 	    bPH = posH[j].i2;
 	    bPV = posV[j].i2;
 	}
-	if ((length(seqH)-1-bPH > qH and length(seqV)-1-bPV >= qV) or
-		(length(seqH)-1-bPH >= qH and length(seqV)-1-bPV > qV))
+	if ((length(seqH)-bPH > qH and length(seqV)-bPV >= qV) or
+		(length(seqH)-bPH >= qH and length(seqV)-bPV > qV))
 	{
-	    SearchField last(bPH, bPV, length(seqH)-1, length(seqV)-1);
+	    SearchField last(bPH, bPV, length(seqH), length(seqV));
 	    appendValue(fields, last);
 	}
 	return 0;
@@ -363,9 +374,15 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
         clear(fields);
         computeSearchFields(fields, posV, posH, seqV, seqH, q, q);
 
+        for (unsigned sf = 0; sf < length(fields); ++sf)
+		{
+        	std::cout << fields[sf].beginV << " "<< fields[sf].endV << " "
+        			<< fields[sf].beginH << " " << fields[sf].endH << std::endl;
+		}
         // search seeds within search fields
         for (unsigned sf = 0; sf < length(fields); ++sf)
         {
+
             TSeedSet tmp_seedSet;
             String<TSeed> tmp_seedChain;
             TInfix seqV_fragment = infix(seqV, fields[sf].beginV, fields[sf].endV);
@@ -416,7 +433,8 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
 template<typename TSeed, typename TSeq>
 int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence)
 {
-    typedef String<TSeq, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
+	typedef typename Value<TSeq>::Type TSeqValue;
+    typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
     typedef Pair<unsigned, unsigned> TPair;
     typedef StringSet<TPair> TPairSet;
 
@@ -454,8 +472,9 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
     			//std::cout << "oh oh " << std::endl;
     		//SEQAN_ASSERT_EQ(bH, bV); does not work if not on main diagonal
     		//SEQAN_ASSERT_EQ(eH, eV);
-    		erase(journal, vp+bH, vp+bH+1);
-    		insert(journal, vp+bH, sequence[bV]);
+    		assignValue(journal, vp+bH, sequence[bV]);
+//    		erase(journal, vp+bH, vp+bH+1);
+//    		insert(journal, vp+bH, sequence[bV]);
     		// no update of the virtual position needed
     	}
     	else
@@ -474,8 +493,12 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
     		}
     	}
 	}
+
+    //String<int> records;
+    //sort(records, CompareByPosAndTypeLessThan_());
     //std::cout << "Host: " << host << std::endl;
     //std::cout << "Journal: " << journal << std::endl;
+    SEQAN_ASSERT(journal == sequence);
     //std::cout << "Nodes: " << journal._journalEntries << std::endl;
     //std::cout << std::endl;
 
@@ -499,7 +522,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
 	TPairSet posV;
 	TPairSet posH;
 
-	fastFirstSeeding(tmp_seedSet, /*index, */seqH, seqV, lagan_parameter[0]);
+	fastFirstSeeding(tmp_seedSet, index, seqH, seqV, lagan_parameter[0]);
 
 	if(length(tmp_seedSet) != 0)
 	    chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
@@ -515,36 +538,27 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
 	}
 
 	iterativeSeeding(seedSet, posV, posH, seqH, seqV, lagan_parameter);
+	return 0;
 }
 // ----------------------------------------------------------------------------
 // Function computelaganAlignment()                                     [Align]
 // ----------------------------------------------------------------------------
 //main
-template<typename TSequence, typename TAlignSpec, typename TScoreValue,
-         typename TScoreSpecAnchor>
-int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
-						  String<unsigned> & lagan_parameter,
-                          Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor)
+template<typename TSequence, typename TIndex /*, typename TScoreValue, typename TScoreSpecAnchor*/>
+int computelaganAlignment(TSequence & ref, TSequence & seq, TIndex index,
+						  String<unsigned> & lagan_parameter
+                          /*, Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor*/)
 {
     typedef Seed<Simple> TSeed;
     typedef SeedSet<TSeed> TSeedSet;
-    typedef Index<TSequence, IndexQGram<SimpleShape, Default()> > TIndex;
-
-
-    StringSet<TSequence> seqs = stringSet(alignment);
-    TSequence seqH = seqs[0];
-    TSequence seqV = seqs[1];
     TSeedSet seedSet;
 
-    TIndex index(seqH);
-    resize(indexShape(index), lagan_parameter[0]);
-
     // -----------------------------------------------------------------------
-    // Step 1: Build index and scan query for seeds
+    // Step 1: Scan query for seeds
     // -----------------------------------------------------------------------
     std::cout << "# # Step 1: Iterative Seeding and Chaining...\n";
     timestamp();
-    seeding(seedSet, index, seqH, seqV, lagan_parameter);
+    seeding(seedSet, index, ref, seq, lagan_parameter);
 
     // -----------------------------------------------------------------------
     // Step 2: Compute global chain
@@ -562,7 +576,7 @@ int computelaganAlignment(Align<TSequence, TAlignSpec> & alignment,
     // -----------------------------------------------------------------------
     std::cout << "# # Step 3: Transforming...\n";
     timestamp();
-    transformIntoJournal(seedChain, seqH, seqV);
+    transformIntoJournal(seedChain, ref, seq);
 
     //timestamp();
     return 0;

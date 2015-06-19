@@ -38,7 +38,7 @@
 #include <seqan/sequence.h>
 #include <seqan/align.h>
 #include <seqan/index.h>
-#include "laganAlignment_impl.h"
+#include "laganAlignment_impl2.h"
 
 using namespace seqan;
 
@@ -87,12 +87,16 @@ using namespace seqan;
  */
 
 // given only one scoring scheme
-template<typename TSequence, typename TAlignSpec, typename TScoreValue, 
-         typename TScoreSpecAnchor>
-int laganAlignment(Align<TSequence, TAlignSpec> & alignment,
-                   String<unsigned> & lagan_parameter,
-                   Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor)
+template<typename TSequence /*, typename TScoreValue, typename TScoreSpecAnchor*/>
+int laganAlignment(TSequence & ref, TSequence & seq,
+                   String<unsigned> & lagan_parameter
+                   /*, Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor*/)
 {
-    int result = computelaganAlignment(alignment, lagan_parameter, scoreSchemeAnchor);
+	typedef Index<TSequence, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
+	TIndex index(ref);
+	resize(indexShape(index), lagan_parameter[0]);
+	indexRequire(index, QGramSADir());
+
+	int result = computelaganAlignment(ref, seq, index, lagan_parameter/*, scoreSchemeAnchor*/);
     return result;
 }
