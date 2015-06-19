@@ -93,9 +93,11 @@ int laganAlignment(TSequence & ref, TSequence & seq,
                    /*, Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor*/)
 {
 	typedef Index<TSequence, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
+	std::cout << "## Building up index over reference sequence...\n";
 	TIndex index(ref);
 	resize(indexShape(index), lagan_parameter[0]);
 	indexRequire(index, QGramSADir());
+	std::cout << "## Done Building up index.\n";
 
 	int result = computelaganAlignment(ref, seq, index, lagan_parameter/*, scoreSchemeAnchor*/);
     return result;

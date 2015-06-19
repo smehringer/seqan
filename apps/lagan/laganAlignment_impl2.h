@@ -116,12 +116,12 @@ void timestamp()
 // ----------------------------------------------------------------------------
 /*
  * Given two sequence (fragments as infixes) the functions builds an index over
- * seqH and afterwards occurences of common subsequences of size q are added
+ * the reference and afterwards occurences of common subsequences of size q are added
  * to a seedSet.
  */
 template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
-            TInfix & seqV, unsigned q, TIndexTag /*tag*/)
+int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref,
+            TInfix & seq, unsigned q, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
     typedef typename Iterator<TInfix>::Type TIterator;
@@ -129,24 +129,24 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
 
     unsigned distance = 0;
 
-    TIndex index(seqH);
+    TIndex index(ref);
     resize(indexShape(index),q);
 
-    hashInit(indexShape(index), begin(seqV));
-    for(TIterator it = begin(seqV); it != (end(seqV)-q+1); goNext(it))
+    hashInit(indexShape(index), begin(seq));
+    for(TIterator it = begin(seq); it != (end(seq)-q+1); goNext(it))
     {
     	unsigned repeat_limit = 0;
         hashNext(indexShape(index), it);
         TOccurrences occs = getOccurrences(index, indexShape(index));
         for (unsigned i = 0; i < length(occs); ++i)
         {
-        	if (beginPosition(seqH) + occs[i] > repeat_limit)
+        	if (beginPosition(ref) + occs[i] > repeat_limit)
         	{
-				TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
+				TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
 				if (!addSeed(seedSet, seed, distance, Merge()))
 					addSeed(seedSet, seed, Single());
         	}
-        	repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
+        	repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
         }
     }
     return 0;
@@ -157,11 +157,11 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH,
 // ----------------------------------------------------------------------------
 /*
  * Given two sequence (fragments as infixes) the functions builds an index over
- * seqH and afterwards occurences of common subsequences of size q are added
+ * the reference and afterwards occurrences of common subsequences of size q are added
  * to a seedSet.
  */
 template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
+int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
                     unsigned q, unsigned num_threads, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
@@ -171,14 +171,14 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
 
     unsigned distance = 0;
 
-    if (int(length(seqV)/num_threads) < q)
+    if (int(length(seq)/num_threads) < q)
     	num_threads = 1;
 
     //set up for parallelism
     String<SeedSet<TSeed> > tmp_sets;
     resize(tmp_sets, num_threads);
     omp_set_num_threads(num_threads);
-    TIndex index(seqH);
+    TIndex index(ref);
     resize(indexShape(index), q);
 
     // each thread fills a temporary seedSet
@@ -187,12 +187,12 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
     {
         typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
 
-        TIterator begin_it = begin(seqV)+ t*(int)(length(seqV)/num_threads);
+        TIterator begin_it = begin(seq)+ t*(int)(length(seq)/num_threads);
         TIterator end_it;
         if (t != num_threads-1)
-            end_it = begin_it+ (int)(length(seqV)/num_threads);
+            end_it = begin_it+ (int)(length(seq)/num_threads);
         else
-            end_it = end(seqV) - q+1;
+            end_it = end(seq) - q+1;
 
         //hashInit(shape, begin_it);
         for(TIterator it = begin_it; it != end_it; it += q)
@@ -201,7 +201,7 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
             TOccurrences occs = getOccurrences(index, shape);
             for (unsigned i = 0; i < length(occs); ++i)
             {
-                TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
+                TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
                 if (!addSeed(tmp_sets[t], seed, distance, Merge()))
                     addSeed(tmp_sets[t], seed, Single());
             }
@@ -217,7 +217,7 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & seqH, TInfix & seqV,
 
             TSeed seed = *it;
             // if begin position of seed lies whithin an overlay area it must be merged
-            if (beginPositionV(seed) < (t * (int)(length(seqV)/num_threads) + q + distance))
+            if (beginPositionV(seed) < (t * (int)(length(seq)/num_threads) + q + distance))
             {
                 if (!addSeed(seedSet, seed, distance, Merge()))
                      addSeed(seedSet, seed, Single());
@@ -249,8 +249,8 @@ int scoreSeed(TSeed & seed)
 // Function fastFirstSeeding()
 // ----------------------------------------------------------------------------
 template<typename TSeed, typename TIndex, typename TSeq, typename TInfix>
-int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
-		             TInfix & seqV, unsigned q)
+int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
+		             TInfix & seq, unsigned q)
 {
 	//typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
 
@@ -259,12 +259,12 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
 
 	unsigned distance = 0;
 
-	//TIndex index(seqH);
+	//TIndex index(ref);
 	//resize(indexShape(index),q);
 	typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
 
-	TIterator it = begin(seqV);
-	while (position(it, seqV) < length(seqV)-q+1)
+	TIterator it = begin(seq);
+	while (position(it, seq) < length(seq)-q+1)
 	{
 		hash(shape, it);
 		TOccurrences occs = getOccurrences(index, shape);
@@ -282,10 +282,10 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
 			// a repeat can be identified if the subsequent seed is found within
 			// the preceding seed (endPos(pre_seed) > beginPos(post_seed)
 			// the next if clause therefore is avoiding repeats
-			if (beginPosition(seqH)+occs[i] > repeat_limit)
+			if (beginPosition(ref)+occs[i] > repeat_limit)
 			{
-				TSeed seed = TSeed(beginPosition(seqH) + occs[i], beginPosition(seqV) + position(it, seqV), q);
-				extendSeed(seed, seqH, seqV, EXTEND_BOTH, MatchExtend());
+				TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
+				extendSeed(seed, ref, seq, EXTEND_BOTH, MatchExtend());
 
 				if (!addSeed(seedSet, seed, distance, Merge()))
 					addSeed(seedSet, seed, Single());
@@ -295,10 +295,10 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
 				if (score > max_score)
 				{
 					max_score = score;
-					offset = endPositionV(seed) - position(it, seqV); // cannot take length of seed because it extendeds to BOTH ends
+					offset = endPositionV(seed) - position(it, seq); // cannot take length of seed because it extendeds to BOTH ends
 				}
 			}
-			repeat_limit = beginPosition(seqH)+occs[i]+q; // q = length of initial seed
+			repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
 		}
 		it += offset;
 	}
@@ -310,7 +310,7 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH,
 // ----------------------------------------------------------------------------
 template<typename TPair, typename TSeq>
 int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & posH,
-						TSeq & seqV, TSeq & seqH, unsigned qV, unsigned qH)
+						TSeq & seq, TSeq & ref, unsigned qV, unsigned qH)
 {
 	// posV and posH store the begin and end positions of seeds
 	// when seeds are chained globally, sorting the positions will lead
@@ -335,10 +335,10 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
 	    bPH = posH[j].i2;
 	    bPV = posV[j].i2;
 	}
-	if ((length(seqH)-bPH > qH and length(seqV)-bPV >= qV) or
-		(length(seqH)-bPH >= qH and length(seqV)-bPV > qV))
+	if ((length(ref)-bPH > qH and length(seq)-bPV >= qV) or
+		(length(ref)-bPH >= qH and length(seq)-bPV > qV))
 	{
-	    SearchField last(bPH, bPV, length(seqH), length(seqV));
+	    SearchField last(bPH, bPV, length(ref), length(seq));
 	    appendValue(fields, last);
 	}
 	return 0;
@@ -354,7 +354,7 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
  */
 template<typename TSeed, typename TPairSet, typename TSeq>
 int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
-		             TSeq & seqH, TSeq & seqV, String<unsigned> & lagan_parameter)
+		             TSeq & ref, TSeq & seq, String<unsigned> & lagan_parameter)
 {
     typedef SeedSet<TSeed> TSeedSet;
 	typedef Pair<unsigned, unsigned> TPair;
@@ -372,7 +372,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
         std::cout << "q = " << q << std::endl;
 
         clear(fields);
-        computeSearchFields(fields, posV, posH, seqV, seqH, q, q);
+        computeSearchFields(fields, posV, posH, seq, ref, q, q);
 
         for (unsigned sf = 0; sf < length(fields); ++sf)
 		{
@@ -385,24 +385,24 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
 
             TSeedSet tmp_seedSet;
             String<TSeed> tmp_seedChain;
-            TInfix seqV_fragment = infix(seqV, fields[sf].beginV, fields[sf].endV);
-            TInfix seqH_fragment = infix(seqH, fields[sf].beginH, fields[sf].endH);
+            TInfix seq_fragment = infix(seq, fields[sf].beginV, fields[sf].endV);
+            TInfix ref_fragment = infix(ref, fields[sf].beginH, fields[sf].endH);
 
             //generate seeds
             if(q < closedAdressingLimit)
             {
-            	nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], Default());
+            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], Default());
             }
             else
             {
-            	nativeSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], OpenAddressing());
+            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
             }
 
 /*            //generate seeds
             if(q < closedAdressingLimit)
-            	parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], 1, Default());
+            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 1, Default());
             else
-                parallelSeeding(tmp_seedSet, seqH_fragment, seqV_fragment, lagan_parameter[i], 1, OpenAddressing());
+                parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 1, OpenAddressing());
 */
             //chain temporary seeds globally
             if(length(tmp_seedSet) != 0)
@@ -509,7 +509,7 @@ int transformIntoJournal(String<TSeed> & seedChain, TSeq & host, TSeq & sequence
 // Function seeding()
 // ----------------------------------------------------------------------------
 template<typename TSeed, typename TIndex, typename TSeq>
-int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
+int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 					 String<unsigned> & lagan_parameter)
 {
 	typedef SeedSet<TSeed> TSeedSet;
@@ -522,7 +522,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
 	TPairSet posV;
 	TPairSet posH;
 
-	fastFirstSeeding(tmp_seedSet, index, seqH, seqV, lagan_parameter[0]);
+	fastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0]);
 
 	if(length(tmp_seedSet) != 0)
 	    chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
@@ -537,7 +537,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
 		addSeed(seedSet, seed, Single());
 	}
 
-	iterativeSeeding(seedSet, posV, posH, seqH, seqV, lagan_parameter);
+	iterativeSeeding(seedSet, posV, posH, ref, seq, lagan_parameter);
 	return 0;
 }
 // ----------------------------------------------------------------------------
@@ -545,7 +545,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & seqH, TSeq & seqV,
 // ----------------------------------------------------------------------------
 //main
 template<typename TSequence, typename TIndex /*, typename TScoreValue, typename TScoreSpecAnchor*/>
-int computelaganAlignment(TSequence & ref, TSequence & seq, TIndex index,
+int computelaganAlignment(TSequence & ref, TSequence & seq, TIndex & index,
 						  String<unsigned> & lagan_parameter
                           /*, Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor*/)
 {

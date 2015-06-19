@@ -162,7 +162,7 @@ int main(int argc, char const ** argv)
               << "\n=====================================================\n";
 
     StringSet<CharString> ids;
-    StringSet<DnaString> seqs;
+    StringSet<Dna5String> seqs;
     SeqFileIn seqFileIn;
 
     std::cout << "Reading in Sequences...\n";
@@ -180,14 +180,14 @@ int main(int argc, char const ** argv)
         return 1;
     }
 
-    DnaString seqH;
-    DnaString seqV;
+    Dna5String seqH;
+    Dna5String seqV;
     seqH = seqs[0];
     seqV = seqs[1];
     std::cout << "# Length of Sequences. SeqH: " << length(seqH) 
               << "  SeqV: " << length(seqV) <<"\n";
 
-    Align<DnaString, ArrayGaps> alignment;
+    Align<Dna5String, ArrayGaps> alignment;
     resize(rows(alignment), 2);
     assignSource(row(alignment, 0), seqH);
     assignSource(row(alignment, 1), seqV);
