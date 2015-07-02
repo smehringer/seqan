@@ -232,12 +232,12 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
 // Function scoreSeed()
 // ----------------------------------------------------------------------------
 template<typename TSeed>
-int scoreSeed(TSeed & seed)
+long long scoreSeed(TSeed & seed)
 {
 	unsigned n = seedSize(seed);
 	SEQAN_ASSERT_EQ(upperDiagonal(seed), lowerDiagonal(seed));
 
-	int score = n - n * abs(lowerDiagonal(seed));
+	long long score = n - n * abs(lowerDiagonal(seed));
 	return (score);
 }
 
@@ -267,7 +267,7 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 		//{
 			hash(shape, it);
 			TOccurrences occs = getOccurrences(index, shape);
-			int max_score = -maxValue<int>();
+			long long max_score = -maxValue<long long>();
 			unsigned repeat_limit = 0;
 
 			// if there are no hits the offset is 1 otherwise its the end position
@@ -289,7 +289,7 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 					if (!addSeed(seedSet, seed, distance, Merge()))
 						addSeed(seedSet, seed, Single());
 
-					int score = scoreSeed(seed);
+					long long score = scoreSeed(seed);
 
 					if (score > max_score)
 					{

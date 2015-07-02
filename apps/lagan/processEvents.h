@@ -16,7 +16,7 @@ using namespace seqan;
 
 // ============================================================================
 // Tags, Classes, Enums
-// =========================================================		===================
+// ============================================================================
 //template<typename TValue>
 struct DeltaEvent
 {
@@ -988,7 +988,7 @@ int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 		int new_start = getNextDR(dr, records, start);
 		int offset = processDR(dr, ref); // inside here, no record is deleted
 		// update records from start to new_start todo:: why does it not work through references???
-		for(unsigned i = start; i < new_start; ++i)
+		for(int i = start; i < new_start; ++i)
 			assignValue(records, i, dr.records[i-start]);
 		applyOffset(records, offset, new_start);
 		start = new_start;
