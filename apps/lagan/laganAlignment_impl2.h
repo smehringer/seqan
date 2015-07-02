@@ -232,12 +232,12 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
 // Function scoreSeed()
 // ----------------------------------------------------------------------------
 template<typename TSeed>
-long long scoreSeed(TSeed & seed)
+long scoreSeed(TSeed & seed)
 {
-	unsigned n = seedSize(seed);
+	long n = (long)seedSize(seed);
 	SEQAN_ASSERT_EQ(upperDiagonal(seed), lowerDiagonal(seed));
 
-	long long score = n - n * abs(lowerDiagonal(seed));
+	long score = n - (long)abs(lowerDiagonal(seed));
 	return (score);
 }
 
@@ -267,7 +267,7 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 		//{
 			hash(shape, it);
 			TOccurrences occs = getOccurrences(index, shape);
-			long long max_score = -maxValue<long long>();
+			long max_score = -maxValue<long>();
 			unsigned repeat_limit = 0;
 
 			// if there are no hits the offset is 1 otherwise its the end position
@@ -289,7 +289,7 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 					if (!addSeed(seedSet, seed, distance, Merge()))
 						addSeed(seedSet, seed, Single());
 
-					long long score = scoreSeed(seed);
+					long score = scoreSeed(seed);
 
 					if (score > max_score)
 					{
@@ -362,7 +362,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
     typedef typename Value<TSeq>::Type TAlphabet;
 
     unsigned alphSize = ValueSize<TAlphabet>::VALUE;
-    unsigned closedAdressingLimit = (int)(log(4000000000)/log(alphSize)); // replace 4000000000 ?
+    int closedAdressingLimit = (int)(log(4000000000)/log(alphSize)); // replace 4000000000 ?
 
     StringSet<SearchField> fields;
 
