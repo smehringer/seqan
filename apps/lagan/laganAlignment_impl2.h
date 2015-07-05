@@ -245,6 +245,96 @@ long scoreSeed(TSeed & seed)
 // Function fastFirstSeeding()
 // ----------------------------------------------------------------------------
 template<typename TSeed, typename TIndex, typename TSeq, typename TInfix>
+int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
+		             TInfix & seq, unsigned q, unsigned num_threads)
+{
+	//typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
+
+	typedef typename Iterator<TInfix>::Type TIterator;
+    typedef typename Iterator<SeedSet<TSeed> >::Type TIter;
+	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
+
+	unsigned distance = 0;
+
+	if (int(length(seq)/num_threads) < q)
+		num_threads = 1;
+
+	//set up for parallelism
+	String<SeedSet<TSeed> > tmp_sets;
+	resize(tmp_sets, num_threads);
+	omp_set_num_threads(num_threads);
+
+	 // each thread fills a temporary seedSet
+	#pragma omp parallel for
+	for (unsigned t = 0; t < num_threads; ++t)
+	{
+		typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
+
+		TIterator begin_it = begin(seq)+ t*(int)(length(seq)/num_threads);
+		TIterator end_it;
+		if (t != num_threads-1)
+			end_it = begin_it + (int)(length(seq)/num_threads);
+		else
+			end_it = end(seq) - q+1;
+
+		while (position(begin_it, seq) < position(end_it, seq))
+		{
+			unsigned offset = 1;
+			//std::cout << position(begin_it,seq) << std::endl;
+			//if (not(infix(seq, position(it, seq), position(it, seq)+q) == "NNNNNNNNNNNNNNNNNNNN"))
+			//{
+				hash(shape, begin_it);
+				TOccurrences occs = getOccurrences(index, shape);
+				long max_score = -maxValue<long>();
+				unsigned repeat_limit = 0;
+				// if there are no hits the offset is 1 otherwise its the end position
+				// of the best scoring seed.
+				// This way long runs will speed up seeding and result in less memory
+				// usage.
+				//unsigned len = length(occs);
+				for (unsigned i = 0; i < length(occs); ++i)
+				{
+					// avoid repeats:
+					// a repeat can be identified if the subsequent seed is found within
+					// the preceding seed (endPos(pre_seed) > beginPos(post_seed)
+					// the next if clause therefore is avoiding repeats
+					if ((beginPosition(ref)+occs[i] > repeat_limit) | (beginPosition(ref)+occs[i] == 0))
+					{
+						TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(begin_it, seq), q);
+						extendSeed(seed, ref, seq, EXTEND_BOTH, MatchExtend());
+
+						if (!addSeed(tmp_sets[t], seed, distance, Merge()))
+							addSeed(tmp_sets[t], seed, Single());
+
+						long score = scoreSeed(seed);
+
+						if (score > max_score)
+						{
+							max_score = score;
+							offset = endPositionV(seed) - position(begin_it, seq); // cannot take length of seed because it extendeds to BOTH ends
+						}
+					}
+					repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
+				}
+			//}
+				begin_it += offset;
+		}
+	}
+
+	// combine seedSets
+	for (unsigned t = 0; t < num_threads; ++t)
+	{
+		//std::cout << length(tmp_sets[t]) << std::endl;
+		for (TIter it = begin(tmp_sets[t], Standard()); it != end(tmp_sets[t], Standard()); ++it)
+			addSeed(seedSet, *it, Single());
+	}
+    return 0;
+}
+
+// ----------------------------------------------------------------------------
+// Function fastFirstSeeding()
+// ----------------------------------------------------------------------------
+template<typename TSeed, typename TIndex, typename TSeq, typename TInfix>
 int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 		             TInfix & seq, unsigned q)
 {
@@ -263,13 +353,13 @@ int fastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 	while (position(it, seq) < length(seq)-q+1)
 	{
 		unsigned offset = 1;
+		//std::cout << position(it,seq) << std::endl;
 		//if (not(infix(seq, position(it, seq), position(it, seq)+q) == "NNNNNNNNNNNNNNNNNNNN"))
 		//{
 			hash(shape, it);
 			TOccurrences occs = getOccurrences(index, shape);
 			long max_score = -maxValue<long>();
 			unsigned repeat_limit = 0;
-
 			// if there are no hits the offset is 1 otherwise its the end position
 			// of the best scoring seed.
 			// This way long runs will speed up seeding and result in less memory
@@ -417,8 +507,6 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
     return 0;
 }
 
-
-
 // ----------------------------------------------------------------------------
 // Function transformIntoJournal()
 // ----------------------------------------------------------------------------
@@ -539,7 +627,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 	TPairSet posV;
 	TPairSet posH;
 
-	fastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0]);
+	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 4);
 
 	std::cout << "\n before chaining \n ";
 	typedef typename Iterator<TSeedSet>::Type TIter;

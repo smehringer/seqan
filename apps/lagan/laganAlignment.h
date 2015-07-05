@@ -178,6 +178,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 //			std::cout << "+ 1\n";
 //	}
 
+	std::cout << ref << std::endl;
 	processDeltaEventsOnReference(records, ref);
 	eraseZeros(records);
 
@@ -188,7 +189,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 //	for (unsigned i = 0; i < length(records); ++i)
 //		printEvent(records[i]);
 
-	//std::cout << ref << std::endl;
+	std::cout << ref << std::endl;
 
 	typedef typename Value<TSequence>::Type TSeqValue;
 	typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
@@ -198,9 +199,9 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 		TJournaledString journal;
 		setHost(journal, ref);
 		transformBack(journal, i, records);
-		//std::cout << journal << std::endl;
+		std::cout << journal << std::endl;
 		std::cout << "Successfully coded and decoded Seq" << i << " ?:" << (journal == seqs[i]) << std::endl;
-		SEQAN_ASSERT(journal == seqs[i]);
+		//SEQAN_ASSERT(journal == seqs[i]);
 	}
     return 0;
 }

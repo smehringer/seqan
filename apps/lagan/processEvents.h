@@ -428,7 +428,7 @@ int updateSNP(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 		if (dep_e.type == 2) // convert ins to sv
 		{
 			dep_e.type = 3;
-			Tsv sv(1,dep_e.ins);
+			Tsv sv(1, dep_e.ins);
 			dep_e.sv = sv;
 			dep_e.ins = 0;
 		}
@@ -468,11 +468,11 @@ int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 		DeltaEvent & dep_e = dr.records[deps[d]];
 		if (dep_e.type == 0) // snp -> insertion
 		{
-			dep_e.type = 2;
 			String<Dna5> ins;
 			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
 			getString(ins, infix);
 			assignValue(ins, dep_e.pos, dep_e.snp);
+			dep_e.type = 2;
 			dep_e.ins = ins;
 			dep_e.snp = 0;
 			dep_e.pos = e.pos;
@@ -481,23 +481,23 @@ int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 		{
 			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e)))
 			{
-				dep_e.type = 2;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
 				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
 				getString(ins, infix1);
 				getString(ins, infix2);
+				dep_e.type = 2;
 				dep_e.ins = ins;
 				dep_e.del = 0;
 				dep_e.pos = e.pos;
 			}
 			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e)))
 			{
-				dep_e.type = 3;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
 				getString(ins, infix);
 				unsigned del = getBorder(dep_e) - getBorder(e);
+				dep_e.type = 3;
 				Tsv sv(del, ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
@@ -505,11 +505,11 @@ int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			}
 			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e)))
 			{
-				dep_e.type = 3;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
 				getString(ins, infix);
 				unsigned del = e.pos - dep_e.pos;
+				dep_e.type = 3;
 				Tsv sv(del, ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
@@ -533,13 +533,13 @@ int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 		{
 			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e))) // sv -> insertion
 			{
-				dep_e.type = 2;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
 				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
 				getString(ins, infix1);
 				append(ins, dep_e.sv.i2);
 				getString(ins, infix2);
+				dep_e.type = 2;
 				dep_e.ins = ins;
 				dep_e.pos = e.pos;
 				//dep_e.sv = 0; todo:: how to set no Null ?
@@ -607,10 +607,10 @@ int updateINS(DependentRegion & dr, DeltaEvent & e, unsigned i)
 
 		if (dep_e.type == 0) // snp -> sv
 		{
-			dep_e.type = 3;
 			String<Dna5> ins;
 			appendValue(ins, dep_e.snp);
 			Tsv sv(length(e.ins)+1, ins);
+			dep_e.type = 3;
 			dep_e.sv = sv;
 			dep_e.snp = 0;
 			dep_e.pos = e.pos;
@@ -621,8 +621,8 @@ int updateINS(DependentRegion & dr, DeltaEvent & e, unsigned i)
 		}
 		else if (dep_e.type == 2) // insertion -> sv
 		{
+			Tsv sv(length(e.ins), dep_e.ins);
 			dep_e.type = 3;
-			Tsv sv( length(e.ins), dep_e.ins);
 			dep_e.sv = sv;
 			dep_e.ins = 0;
 		}
@@ -666,12 +666,12 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 
 		if (dep_e.type == 0) // snp -> sv
 		{
-			dep_e.type = 3;
 			String<Dna5> ins;
 			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
 			getString(ins, infix);
 			assignValue(ins, dep_e.pos, dep_e.snp);
 			unsigned del = length(e.sv.i2);
+			dep_e.type = 3;
 			Tsv sv(del, ins);
 			dep_e.sv = sv;
 			dep_e.snp = 0;
@@ -681,12 +681,12 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 		{
 			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e))) // del -> sv
 			{
-				dep_e.type = 3;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
 				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
 				getString(ins, infix1);
 				getString(ins, infix2);
+				dep_e.type = 3;
 				Tsv sv(e.sv.i1, ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
@@ -694,11 +694,11 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			}
 			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e))) // del -> sv
 			{
-				dep_e.type = 3;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
 				getString(ins, infix);
 				unsigned del = getBorder(dep_e) - getBorder(e);
+				dep_e.type = 3;
 				Tsv sv(del, ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
@@ -706,11 +706,11 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			}
 			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e))) // del -> sv
 			{
-				dep_e.type = 3;
 				String<Dna5> ins;
 				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
 				getString(ins, infix);
-				unsigned del = e.pos - dep_e.pos;
+				unsigned del = e.pos - dep_e.pos + length(e.sv.i2);
+				dep_e.type = 3;
 				Tsv sv(del, ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
@@ -728,9 +728,12 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			getString(ins, infix1);
 			append(ins, dep_e.ins);
 			getString(ins, infix2);
-			Tsv sv(e.sv.i1, ins);
+			std::cout << ins << std::endl;
+			Tsv sv(length(e.sv.i2), ins);
+			dep_e.type = 3;
 			dep_e.sv = sv;
 			dep_e.ins = 0;
+			dep_e.pos = e.pos;
 		}
 		else if (dep_e.type == 3) // alter sv
 		{
@@ -742,6 +745,7 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 				getString(ins, infix1);
 				append(ins, dep_e.sv.i2);
 				getString(ins, infix2);
+				dep_e.sv.i1 = length(e.sv.i2);
 				dep_e.sv.i2 = ins;
 				dep_e.pos = e.pos;
 			}
