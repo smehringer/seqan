@@ -994,7 +994,8 @@ int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 		// update records from start to new_start todo:: why does it not work through references???
 		for(int i = start; i < new_start; ++i)
 			assignValue(records, i, dr.records[i-start]);
-		applyOffset(records, offset, new_start);
+		if(offset!=0)
+			applyOffset(records, offset, new_start);
 		start = new_start;
 		end = length(records); // update because number of records might change!
 	}

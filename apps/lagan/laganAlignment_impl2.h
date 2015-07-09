@@ -254,7 +254,9 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
     typedef typename Iterator<SeedSet<TSeed> >::Type TIter;
 	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
 
+	num_threads += num_threads;
 	unsigned distance = 0;
+	unsigned kband = (length(seq)/3 + length(ref)/3)/2;
 
 	if (int(length(seq)/num_threads) < q)
 		num_threads = 1;
@@ -262,11 +264,11 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 	//set up for parallelism
 	String<SeedSet<TSeed> > tmp_sets;
 	resize(tmp_sets, num_threads);
-	omp_set_num_threads(num_threads);
+	omp_set_num_threads(num_threads/2); // set to actual number of threads (without doubling)
 
 	 // each thread fills a temporary seedSet
 	#pragma omp parallel for
-	for (unsigned t = 0; t < num_threads; ++t)
+	for (unsigned t = 0; t < (num_threads); ++t)
 	{
 		typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
 
@@ -280,7 +282,7 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 		while (position(begin_it, seq) < position(end_it, seq))
 		{
 			unsigned offset = 1;
-			//std::cout << position(begin_it,seq) << std::endl;
+			//std::cout << "\r" << "\t" << t << "\t" << position(begin_it,seq) << std::endl;
 			//if (not(infix(seq, position(it, seq), position(it, seq)+q) == "NNNNNNNNNNNNNNNNNNNN"))
 			//{
 				hash(shape, begin_it);
@@ -298,20 +300,23 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 					// a repeat can be identified if the subsequent seed is found within
 					// the preceding seed (endPos(pre_seed) > beginPos(post_seed)
 					// the next if clause therefore is avoiding repeats
-					if ((beginPosition(ref)+occs[i] > repeat_limit) | (beginPosition(ref)+occs[i] == 0))
+					if (((beginPosition(ref)+occs[i] > repeat_limit) || (beginPosition(ref)+occs[i] == 0)) && (abs(position(begin_it,seq)-occs[i]) < kband))
 					{
 						TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(begin_it, seq), q);
 						extendSeed(seed, ref, seq, EXTEND_BOTH, MatchExtend());
-
-						if (!addSeed(tmp_sets[t], seed, distance, Merge()))
+						
+						if (seedSize(seed)>=100)
+						{
+						
 							addSeed(tmp_sets[t], seed, Single());
 
-						long score = scoreSeed(seed);
+							long score = scoreSeed(seed);
 
-						if (score > max_score)
-						{
-							max_score = score;
-							offset = endPositionV(seed) - position(begin_it, seq); // cannot take length of seed because it extendeds to BOTH ends
+							if (score > max_score)
+							{
+								max_score = score;
+								offset = endPositionV(seed) - position(begin_it, seq); // cannot take length of seed because it extendeds to BOTH ends
+							}
 						}
 					}
 					repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
@@ -319,6 +324,7 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 			//}
 				begin_it += offset;
 		}
+	std::cout << "Done " << t << "\tFound " << length(tmp_sets[t]) << " seeds." << std::endl;
 	}
 
 	// combine seedSets
@@ -550,7 +556,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     	unsigned bV = fields[sf].beginV;
     	if(eV-bV == 1 && eH-bH == 1)
     	{
-    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
+//    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
     		DeltaEvent rec = DeltaEvent(bH, s, n, sequence[bV]);
     		appendValue(records, rec);
 //    		assignValue(journal, vp+bH, sequence[bV]);
@@ -559,7 +565,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     	{
     		if ((eH-bH >= 1) & (eV-bV >= 1))
     		{
-    			std::cout << "Structural Variation: del at " << bH << "-" << eH << " " <<  " ins at " << bV << "-" << eV << std::endl;
+//    			std::cout << "Structural Variation: del at " << bH << "-" << eH << " " <<  " ins at " << bV << "-" << eV << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
 				String<Dna5> ins;
@@ -575,7 +581,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     		}
     		else if (eH-bH >= 1)
 			{
-				std::cout << "Deletion at " << bH << "-" << eH << " " << infix(host, bH, eH) << std::endl;
+//				std::cout << "Deletion at " << bH << "-" << eH << " " << infix(host, bH, eH) << std::endl;
 
 				DeltaEvent rec = DeltaEvent(bH, s, n, eH-bH);
 				appendValue(records, rec);
@@ -585,7 +591,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
 			}
     		else if (eV-bV >= 1)
     		{
-    			std::cout << "Insertion at " << bH << "-" << eH << " " << infix(sequence, bV, eV) << std::endl;
+//    			std::cout << "Insertion at " << bH << "-" << eH << " " << infix(sequence, bV, eV) << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
     			String<Dna5> ins;
@@ -627,21 +633,22 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 	TPairSet posV;
 	TPairSet posH;
 
-	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 4);
+	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 14);
 
-	std::cout << "\n before chaining \n ";
-	typedef typename Iterator<TSeedSet>::Type TIter;
-	for (TIter it = begin(tmp_seedSet, Standard()); it != end(tmp_seedSet, Standard()); ++it)
-		std::cout << *it << std::endl;
+//	std::cout << "\n before chaining \n ";
+//	typedef typename Iterator<TSeedSet>::Type TIter;
+//	for (TIter it = begin(tmp_seedSet, Standard()); it != end(tmp_seedSet, Standard()); ++it)
+//		std::cout << *it << std::endl;
 
+	std::cout << "Done Seeding. Start Chaining...\n";
 	if(length(tmp_seedSet) != 0)
 	    chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
 
-	std::cout << "\n after chaining \n ";
+//	std::cout << "\n after chaining \n ";
 	for (unsigned j = 0; j < length(tmp_seedChain); ++j)
 	{
 		TSeed & seed = tmp_seedChain[j];
-		std::cout << seed << std::endl;
+//		std::cout << seed << std::endl;
 		TPair pairH(beginPositionH(seed), endPositionH(seed));
 		TPair pairV(beginPositionV(seed), endPositionV(seed));
 		appendValue(posH, pairH);
@@ -669,10 +676,12 @@ int getDeltaEvents(String<DeltaEvent> & records, TSequence & ref, TSequence & se
     // -----------------------------------------------------------------------
     // Scan query for seeds
     // -----------------------------------------------------------------------
-    std::cout << "### Seeding & Chaining..";
+    std::cout << "### Seeding...";
     timestamp();
     seeding(seedSet, index, ref, seq, lagan_parameter);
     SEQAN_ASSERT(length(seedSet)!=0);
+    
+    std::cout << "### Chaining...";
     chainSeedsGlobally(seedChain, seedSet, SparseChaining());
 //    for (unsigned i = 0; i < length(seedChain); ++i)
 //        std::cout << seedChain[i] << std::endl;
@@ -681,11 +690,12 @@ int getDeltaEvents(String<DeltaEvent> & records, TSequence & ref, TSequence & se
     // -----------------------------------------------------------------------
     // Variant Calling
     // -----------------------------------------------------------------------
-    std::cout << "### Variant Calling..\n";
+    std::cout << "### Variant Calling...\n";
     transformIntoJournal(records, seedChain, ref, seq, s, n);
 
     //timestamp();
     return 0;
 }
 
-#endif //SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL2_H
+#endif //SEQAN_DEMOS_MINILAGAN_LAGANALIGNMENT_IMPL2_eeds.
+
