@@ -177,7 +177,7 @@ chainSeedsGlobally(
             // *first* one that compares greater than the reference
             // one.  Searching for the this one and decrementing the
             // result iterator gives the desired result.
-            TIntermediateSolution referenceSolution(beginPositionV(seedK), 0, maxValue<unsigned>());
+            TIntermediateSolution referenceSolution(beginPositionV(seedK), maxValue<TSize>(), maxValue<unsigned>());
             // std::cout << "    intermediateSolutions.upper_bound(" << beginPositionV(seedK) << ")" << std::endl;
             TIntermediateSolutionsIterator itJ = intermediateSolutions.upper_bound(referenceSolution);
             if (itJ == intermediateSolutions.begin()) {
@@ -212,11 +212,16 @@ chainSeedsGlobally(
             SEQAN_ASSERT_GT(endPositionV(seedK), 0u);
             TIntermediateSolution referenceSolution(endPositionV(seedK), 0, maxValue<unsigned>());
             TIntermediateSolutionsIterator itSol = intermediateSolutions.upper_bound(referenceSolution);
-            if (itSol == intermediateSolutions.end()) {
-                // None found.  Insert a new triple for seed k.
-                TIntermediateSolution sol(endPositionV(seedK), qualityOfChainEndingIn[it->i3], it->i3);
-                // std::cout << "  INSERT (" << sol.i1 << ", " << sol.i2 << ", " << sol.i3 << ") " << __LINE__ << std::endl;
-                intermediateSolutions.insert(sol);
+            if (itSol == intermediateSolutions.end() ) {
+                // None found.  Insert a new triple for seed k if and only if it's score is greater then it's
+            	// predecessor in the intermediateSolution. Otherwise the invariant that the intermediateSolution
+            	// is sorted by the scores in increasing order is invalidated.
+            	if (intermediateSolutions.empty() || (--itSol)->i2 <= qualityOfChainEndingIn[it->i3])
+            	{
+                    TIntermediateSolution sol(endPositionV(seedK), qualityOfChainEndingIn[it->i3], it->i3);
+                    // std::cout << "  INSERT (" << sol.i1 << ", " << sol.i2 << ", " << sol.i3 << ") " << __LINE__ << std::endl;
+                    intermediateSolutions.insert(sol);
+            	}
             } else {
                 // Found this intermediate solution.
                 SEQAN_ASSERT_GEQ(itSol->i1, endPositionV(seedK));
