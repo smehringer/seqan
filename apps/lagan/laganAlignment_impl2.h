@@ -248,8 +248,6 @@ template<typename TSeed, typename TIndex, typename TSeq, typename TInfix>
 int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref,
 		             TInfix & seq, unsigned q, unsigned num_threads)
 {
-	//typedef Index<TSeq, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
-
 	typedef typename Iterator<TInfix>::Type TIterator;
     typedef typename Iterator<SeedSet<TSeed> >::Type TIter;
 	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;

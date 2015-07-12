@@ -58,6 +58,7 @@ struct LaganOptions
     unsigned q; // lagan parameter
     unsigned bandExtension;
     unsigned scoreM, scoreMM, scoreG; // scoringsheme
+    unsigned t; // number of threads
 
     seqan::CharString filename;
     seqan::CharString filenameOUT;
@@ -65,7 +66,8 @@ struct LaganOptions
     LaganOptions() :
         q(4),
         bandExtension(2),
-        scoreM(0), scoreMM(-1), scoreG(-1) // edit distance
+        scoreM(0), scoreMM(-1), scoreG(-1), // edit distance
+        t(1)
     {}
 };
 
@@ -115,6 +117,11 @@ parseCommandLine(LaganOptions & options, int argc, char const ** argv)
         "The allowed extension around seeds that will be used for bandedChainAlignment()",
         seqan::ArgParseArgument::INTEGER, "INT"));
 
+    addOption(parser, seqan::ArgParseOption(
+        "t", "threads",
+        "The number of threads that can be used.",
+        seqan::ArgParseArgument::INTEGER, "INT"));
+
     // Parse command line.
     seqan::ArgumentParser::ParseResult res = seqan::parse(parser, argc, argv);
 
@@ -138,6 +145,7 @@ parseCommandLine(LaganOptions & options, int argc, char const ** argv)
     getOptionValue(options.scoreG, parser, "scoringsheme",2);
 
     getOptionValue(options.bandExtension, parser, "bandExtension");
+    getOptionValue(options.t, parser, "threads");
 
     return seqan::ArgumentParser::PARSE_OK;
 }
@@ -195,7 +203,7 @@ int main(int argc, char const ** argv)
     // Compute Alignment
     // -----------------------------------------------------------------------
     std::cout << "# Computing Alignment...\n";
-    laganAlignment(seqH, seqV, options.lagan_parameter /*, scoreScheme*/ );
+    laganAlignment(seqH, seqV, options.t, options.lagan_parameter /*, scoreScheme*/ );
 
     std::cout << "=====================================================\n" << "DONE\n";
     return 0;

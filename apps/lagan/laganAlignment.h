@@ -160,7 +160,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	for (unsigned i = 0 ; i < length(seqs); ++i)
 	{
 		std::cout << "## SEQUENCE " << i <<"\n";
-        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter/*, scoreSchemeAnchor*/);
+        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, t, lagan_parameter/*, scoreSchemeAnchor*/);
         std::cout << "\n";
 	}
 
@@ -178,7 +178,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 //			std::cout << "+ 1\n";
 //	}
 
-//	std::cout << ref << std::endl;
+	//std::cout << ref << std::endl;
 	processDeltaEventsOnReference(records, ref);
 	eraseZeros(records);
 
