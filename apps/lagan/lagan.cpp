@@ -203,7 +203,7 @@ int main(int argc, char const ** argv)
     // Compute Alignment
     // -----------------------------------------------------------------------
     std::cout << "# Computing Alignment...\n";
-    laganAlignment(seqH, seqV, options.t, options.lagan_parameter /*, scoreScheme*/ );
+    laganAlignment(seqH, seqV, options.lagan_parameter /*, scoreScheme*/ );
 
     std::cout << "=====================================================\n" << "DONE\n";
     return 0;
