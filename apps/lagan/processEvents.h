@@ -669,7 +669,7 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			String<Dna5> ins;
 			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
 			getString(ins, infix);
-			assignValue(ins, dep_e.pos, dep_e.snp);
+			assignValue(ins, abs(dep_e.pos-e.pos), dep_e.snp);
 			unsigned del = length(e.sv.i2);
 			dep_e.type = 3;
 			Tsv sv(del, ins);

@@ -253,7 +253,6 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 	typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
 
 	num_threads += num_threads;
-	unsigned distance = 0;
 	unsigned kband = (length(seq)/3 + length(ref)/3)/2;
 
 	if (int(length(seq)/num_threads) < q)
@@ -631,7 +630,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 	TPairSet posV;
 	TPairSet posH;
 
-	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 14);
+	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 4);
 
 //	std::cout << "\n before chaining \n ";
 //	typedef typename Iterator<TSeedSet>::Type TIter;
