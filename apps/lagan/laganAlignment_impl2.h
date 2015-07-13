@@ -630,7 +630,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 	TPairSet posV;
 	TPairSet posH;
 
-	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 4);
+	parallelFastFirstSeeding(tmp_seedSet, index, ref, seq, lagan_parameter[0], 14);
 
 //	std::cout << "\n before chaining \n ";
 //	typedef typename Iterator<TSeedSet>::Type TIter;

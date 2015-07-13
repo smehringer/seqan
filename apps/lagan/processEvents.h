@@ -125,7 +125,7 @@ int size(String<bool, Packed<> > & seqs)
 unsigned getBorder(DeltaEvent & e)
 {
 	if ((e.type == 0) | (e.type == 2)) // snp or insertion
-		return e.pos;
+		return e.pos+1;
 	else if (e.type == 1) // del
 		return e.pos + e.del;
 	else // sv
@@ -336,7 +336,7 @@ int mergeIntoRef(DeltaEvent & e, TSequence & ref)
 	if (e.type == 0) // snp
 		assignValue(journal, e.pos, e.snp);
 	else if (e.type == 1) // del
-		erase(journal, e.pos, e.del);
+		erase(journal, e.pos, getBorder(e));
 	else if (e.type == 2) // ins
 		insert(journal, e.pos, e.ins);
 	else // sv
@@ -409,7 +409,7 @@ int updateDependencies(DependentRegion & dr)
 template<typename TSequence>
 int updateSNP(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 {
-	std::cout << "included SNP at " << e.pos << " into ref "<< std::endl;
+//	std::cout << "included SNP at " << e.pos << " into ref "<< std::endl;
 	typedef Pair<unsigned, String<Dna5> > Tsv;
 
 	String<unsigned> & deps = dr.dependencies[i];
@@ -471,7 +471,7 @@ int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 			String<Dna5> ins;
 			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
 			getString(ins, infix);
-			assignValue(ins, dep_e.pos, dep_e.snp);
+			assignValue(ins, abs(dep_e.pos-e.pos), dep_e.snp);
 			dep_e.type = 2;
 			dep_e.ins = ins;
 			dep_e.snp = 0;
@@ -899,7 +899,7 @@ int updateDR(DependentRegion & dr, DeltaEvent & e, TPair & dep)
 	String<unsigned> toAdd;
 	for (unsigned d = 0; d < length(dep); ++d)
 	{
-		if (e.pos <= dep[d].i2) // e and dep[d] are dependent of each other
+		if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
 		{
 			appendValue(dr.dependencies[dep[d].i1], record_num);
 			appendValue(toAdd, dep[d].i1);
@@ -960,7 +960,7 @@ unsigned getNextDR(DependentRegion & dr, String<unsigned> & recs_to_delete, TDel
 			appendValue(recs_to_delete, i);
 		}
 
-		else if (e.pos <= drb) // e is inside dependent region dr
+		else if (e.pos < drb) // e is inside dependent region dr
 		{
 			unsigned record_num = length(dr.records); // index in dependent region
 
@@ -1003,12 +1003,12 @@ int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 
 
 		DependentRegion dr;
-		int new_start = getNextDR(dr, tmp_recs_to_delete, records, start);
+		unsigned new_start = getNextDR(dr, tmp_recs_to_delete, records, start);
 		int offset = processDR(dr, ref); // inside here, no record is deleted
 
 		// update records from start to new_start todo:: why does it not work through references???
 		unsigned skip = 0;
-		for(int i = start; i < new_start; ++i)
+		for(unsigned i = start; i < new_start; ++i)
 		{
 			if (!(isIn(tmp_recs_to_delete, i)))
 				assignValue(records, i, dr.records[i-start-skip]);
