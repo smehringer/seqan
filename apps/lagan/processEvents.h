@@ -388,7 +388,7 @@ int updateDependencies(DependentRegion & dr)
 		String<unsigned> toAdd;
 		for (unsigned d = 0; d < length(dep); ++d)
 		{
-			if (e.pos <= dep[d].i2) // e and dep[d] are dependent of each other
+			if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
 			{
 				appendValue(dr.dependencies[dep[d].i1], i);
 				appendValue(toAdd, dep[d].i1);
@@ -838,9 +838,15 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		String<unsigned> dep_i = dr.dependencies[best_i];
 		unsigned start;
 		if (length(dep_i)== 0)
-			start = 1;
+			start = best_i+1;
 		else
-			start = dep_i[length(dep_i)-1]  +1 ;
+		{
+			unsigned last_dep = dep_i[length(dep_i)-1];
+			if (last_dep < best_i)
+				start = best_i +1 ;
+			else
+				start = last_dep +1;
+		}
 		applyOffset(dr.records, tmp_offset, start);
 
 		// update dependencies
