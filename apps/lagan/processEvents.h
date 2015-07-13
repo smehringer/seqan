@@ -858,8 +858,17 @@ int processDR(DependentRegion & dr, TSequence & ref)
 	return offset;
 }
 
-
-
+template<typename TList, typename TNeedle>
+bool isIn(TList & list, TNeedle & needle)
+{
+	typedef typename Iterator<TList>::Type TIter;
+	for (TIter it = begin(list); it != end(list); ++it)
+	{
+		if (*it == needle)
+			return true;
+	}
+	return false;
+}
 
 bool isEqual(DeltaEvent & lhs, DeltaEvent & rhs)
 {
@@ -919,16 +928,16 @@ int clear(DependentRegion & dr)
 }
 
 template<typename TDeltaEvents>
-unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
+unsigned getNextDR(DependentRegion & dr, String<unsigned> & recs_to_delete, TDeltaEvents & records, unsigned start)
 {
 	SEQAN_ASSERT(start < length(records));
 	typedef Pair<unsigned, unsigned> TPair;
 
 	String<TPair> dep;
 
-	DeltaEvent & first = records[start];
+	//DeltaEvent & first = records[start];
 	// initialize first dependent region
-	appendValue(dr.records, first);
+	appendValue(dr.records, records[start]);
 	String<unsigned> d; // no dependencies for first entry yet
 	appendValue(dr.dependencies, d);
 
@@ -939,7 +948,7 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 
 	// parse records from left to right
 	// look for merging possibilities and define dependent regions
-	String<unsigned> recs_to_delete;
+	//String<unsigned> recs_to_delete;
 	for (unsigned i = start+1; i < length(records); ++i)
 	{
 		DeltaEvent & e = records[i];
@@ -966,12 +975,12 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 
 		else // end of dependent region
 		{
-			deleteEntries(records, recs_to_delete);
-			return (i-length(recs_to_delete)+1);
+			//deleteEntries(records, recs_to_delete);
+			return (i);
 		}
 	}
 
-	deleteEntries(records, recs_to_delete);
+	//deleteEntries(records, recs_to_delete);
 	return length(records);
 }
 
@@ -982,23 +991,38 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 template<typename TDeltaEvents, typename TSequence>
 int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 {
+	String<unsigned> recs_to_delete;
+	sort(records, CompareByPosAndTypeLessThan_()); // sort by reference position(first) and type(second) and value(third)
+
 	unsigned start = 0;
 	unsigned end = length(records);
 	while(start < end)
 	{
-		sort(records, CompareByPosAndTypeLessThan_()); // sort by reference position(first) and type(second) and value(third)
+		String<unsigned> tmp_recs_to_delete;
+
+
 
 		DependentRegion dr;
-		int new_start = getNextDR(dr, records, start);
+		int new_start = getNextDR(dr, tmp_recs_to_delete, records, start);
 		int offset = processDR(dr, ref); // inside here, no record is deleted
+
 		// update records from start to new_start todo:: why does it not work through references???
+		unsigned skip = 0;
 		for(int i = start; i < new_start; ++i)
-			assignValue(records, i, dr.records[i-start]);
+		{
+			if (!(isIn(tmp_recs_to_delete, i)))
+				assignValue(records, i, dr.records[i-start-skip]);
+			else
+				++skip;
+		}
+		append(recs_to_delete, tmp_recs_to_delete);
+
 		if(offset!=0)
 			applyOffset(records, offset, new_start);
 		start = new_start;
 		end = length(records); // update because number of records might change!
 	}
+	deleteEntries(records, recs_to_delete);
 	return 0;
 }
 #endif /* APPS_LAGAN_PROCESSEVENTS_H_ */
