@@ -36,9 +36,7 @@ struct DeltaEvent
 	DeltaEvent(unsigned p, unsigned s, unsigned n, Dna5 v) : // SNP
 		pos(p), seq(s), type(0), snp(v), ins(0), del(0), sv(0, 0)
 	{
-		resize(seqs, n);
-		for(unsigned i = 0; i < n; ++i)
-			seqs[i] = false;
+		resize(seqs, n, false);
 		seqs[s] = true;
 		//assignValue(seqs, s, 1);
 	}
@@ -135,11 +133,12 @@ unsigned getBorder(DeltaEvent & e)
 int combineOR(String<bool, Packed<> > & seqs1, String<bool, Packed<> > & seqs2)
 {
 	SEQAN_ASSERT_EQ(length(seqs1), length(seqs2));
-	for (unsigned i = 0; i < length(seqs1); ++i)
-	{
-		bool b = seqs1[i] or seqs2[i];
-		seqs1[i] = b;
-	}
+//	for (unsigned i = 0; i < length(seqs1); ++i)
+//	{
+//		bool b = seqs1[i] or seqs2[i];
+//		seqs1[i] = b;
+//	}
+	seqs1 |= seqs2;
 	return 0;
 }
 
@@ -399,8 +398,9 @@ int updateDependencies(DependentRegion & dr)
 			}
 		}
 		deleteEntries(dep, toDelete); //toDelete == 0?
-
 		dr.dependencies[i] = toAdd;
+		TPair next(i, getBorder(e));
+		appendValue(dep, next);
 	}
 
 	return 0;
@@ -687,7 +687,7 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 				getString(ins, infix1);
 				getString(ins, infix2);
 				dep_e.type = 3;
-				Tsv sv(e.sv.i1, ins);
+				Tsv sv(length(e.sv.i2), ins);
 				dep_e.sv = sv;
 				dep_e.del = 0;
 				dep_e.pos = e.pos;
@@ -798,11 +798,25 @@ int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
 template<typename TSequence>
 int processDR(DependentRegion & dr, TSequence & ref)
 {
+	std::cout << "star dr\n";
+	for(unsigned i = 0; i < length(dr.records); ++i)
+	{
+		std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
+		for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
+			std::cout << dr.records[i].seqs[j];
+		std::cout << " type:" << dr.records[i].type <<" \n";
+	}
 	computeEventScores(dr);
 	bool better = dr.bestScoringDeltaEvent.i2 < 0;
 	int offset = 0;
 	while (better)
+	{	for(unsigned i = 0; i < length(dr.records); ++i)
 	{
+		std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
+		for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
+			std::cout << dr.records[i].seqs[j];
+		std::cout << " type:" << dr.records[i].type <<" \n";
+	}
 		unsigned best_i = dr.bestScoringDeltaEvent.i1;
 		DeltaEvent & best = dr.records[best_i];
 		DeltaEvent best_copy = dr.records[best_i];
@@ -830,9 +844,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		}
 
 		// include best event into reference
-		mergeIntoRef(best_copy, ref);
-
-		sort(dr.records, CompareByPosAndTypeLessThan_());
+		mergeIntoRef(best_copy, ref); //todo:: change order of ref and best_copy (seqan-code-style)
 
 		// update tmp_offset on unaffected delta events in dr
 		String<unsigned> dep_i = dr.dependencies[best_i];
@@ -849,6 +861,8 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		}
 		applyOffset(dr.records, tmp_offset, start);
 
+		sort(dr.records, CompareByPosAndTypeLessThan_());
+
 		// update dependencies
 		updateDependencies(dr);
 
@@ -860,6 +874,14 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		// set better again
 		better = dr.bestScoringDeltaEvent.i2 < 0;
 		offset += tmp_offset;
+		std::cout << "heloooo\n";
+		for(unsigned i = 0; i < length(dr.records); ++i)
+		{
+			std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
+			for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
+				std::cout << dr.records[i].seqs[j];
+			std::cout << " type:" << dr.records[i].type <<" \n";
+		}
 	}
 	return offset;
 }
@@ -999,17 +1021,29 @@ int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 {
 	String<unsigned> recs_to_delete;
 	sort(records, CompareByPosAndTypeLessThan_()); // sort by reference position(first) and type(second) and value(third)
+	for(unsigned i = 0; i < length(records); ++i)
+	{
+		std::cout << "records #" << i << " at " << records[i].pos << " seqs:";
+		for (unsigned j = 0; j < length(records[i].seqs); ++j)
+			std::cout << records[i].seqs[j];
+		std::cout << " type:" << records[i].type <<" \n";
+	}
 
 	unsigned start = 0;
 	unsigned end = length(records);
 	while(start < end)
 	{
 		String<unsigned> tmp_recs_to_delete;
-
-
-
 		DependentRegion dr;
+
 		unsigned new_start = getNextDR(dr, tmp_recs_to_delete, records, start);
+//		std::cout << "dependent region contains records:";
+//		for(unsigned i = start; i < new_start; ++i)
+//		{
+//			if (!(isIn(tmp_recs_to_delete, i)))
+//				std::cout << i << ",";
+//		}
+//		std::cout << "\n";
 		int offset = processDR(dr, ref); // inside here, no record is deleted
 
 		// update records from start to new_start todo:: why does it not work through references???
@@ -1029,6 +1063,7 @@ int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 		end = length(records); // update because number of records might change!
 	}
 	deleteEntries(records, recs_to_delete);
+
 	return 0;
 }
 #endif /* APPS_LAGAN_PROCESSEVENTS_H_ */

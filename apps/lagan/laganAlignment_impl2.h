@@ -553,7 +553,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     	unsigned bV = fields[sf].beginV;
     	if(eV-bV == 1 && eH-bH == 1)
     	{
-//    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
+    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
     		DeltaEvent rec = DeltaEvent(bH, s, n, sequence[bV]);
     		appendValue(records, rec);
 //    		assignValue(journal, vp+bH, sequence[bV]);
@@ -562,7 +562,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     	{
     		if ((eH-bH >= 1) & (eV-bV >= 1))
     		{
-//    			std::cout << "Structural Variation: del at " << bH << "-" << eH << " " <<  " ins at " << bV << "-" << eV << std::endl;
+   			std::cout << "Structural Variation: del at " << bH << "-" << eH << " " <<  " ins at " << bV << "-" << eV << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
 				String<Dna5> ins;
@@ -578,7 +578,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     		}
     		else if (eH-bH >= 1)
 			{
-//				std::cout << "Deletion at " << bH << "-" << eH << " " << infix(host, bH, eH) << std::endl;
+				std::cout << "Deletion at " << bH << "-" << eH << " " << infix(host, bH, eH) << std::endl;
 
 				DeltaEvent rec = DeltaEvent(bH, s, n, eH-bH);
 				appendValue(records, rec);
@@ -588,7 +588,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
 			}
     		else if (eV-bV >= 1)
     		{
-//    			std::cout << "Insertion at " << bH << "-" << eH << " " << infix(sequence, bV, eV) << std::endl;
+    			std::cout << "Insertion at " << bH << "-" << eH << " " << infix(sequence, bV, eV) << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
     			String<Dna5> ins;
