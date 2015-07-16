@@ -49,7 +49,7 @@
 #include <seqan/align.h>
 #include <seqan/index.h>
 #include <seqan/sequence_journaled.h>
-#include "processEvents.h"
+#include "processEvents2.h"
 
 #include <time.h>
 #include <omp.h>
@@ -547,9 +547,9 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     	if(eV-bV == 1 && eH-bH == 1)
     	{
 //    		std::cout << "SNP at " << bH << " " << host[bH] << "->" << sequence[bV] << std::endl;
-		String<Dna5> ins;
-		appendValue(ins, sequence[bV];
-    		DeltaEvent rec = DeltaEvent(bH, s, n, 0, ins, 1);
+    		String<Dna5> ins = "";
+    		appendValue(ins, sequence[bV]);
+    		DeltaEvent rec = DeltaEvent(bH, n, s, 0, ins, 1);
     		appendValue(records, rec);
     	}
     	else
@@ -559,17 +559,17 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
 //    			std::cout << "Structural Variation: del at " << bH << "-" << eH << " " <<  " ins at " << bV << "-" << eV << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
-			String<Dna5> ins;
-			getString(ins, infix);
-    			DeltaEvent rec = DeltaEvent(bH, s, n, 3, ins, (eH-bH));
+    			String<Dna5> ins = "";
+    			getString(ins, infix);
+    			DeltaEvent rec = DeltaEvent(bH, n, s, 3, ins, (eH-bH));
     			appendValue(records, rec);
     		}
     		else if (eH-bH >= 1)
 			{
 //				std::cout << "Deletion at " << bH << "-" << eH << " " << infix(host, bH, eH) << std::endl;
 
-				String<Dna5> ins;
-				DeltaEvent rec = DeltaEvent(bH, s, n, 1, ins, (eH-bH));
+				String<Dna5> ins = "";
+				DeltaEvent rec = DeltaEvent(bH, n, s, 1, ins, (eH-bH));
 				appendValue(records, rec);
 			}
     		else if (eV-bV >= 1)
@@ -577,9 +577,9 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
 //    			std::cout << "Insertion at " << bH << "-" << eH << " " << infix(sequence, bV, eV) << std::endl;
 
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
-    			String<Dna5> ins;
+    			String<Dna5> ins = "";
     			getString(ins, infix);
-    			DeltaEvent rec = DeltaEvent(bH, s, n, 2, ins, 0);
+    			DeltaEvent rec = DeltaEvent(bH, n, s, 2, ins, 0);
     			appendValue(records, rec);
     		}
     	}

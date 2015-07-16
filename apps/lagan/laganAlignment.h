@@ -38,8 +38,8 @@
 #include <seqan/sequence.h>
 #include <seqan/align.h>
 #include <seqan/index.h>
-#include "laganAlignment_impl2.h"
-#include "processEvents.h"
+#include "laganAlignment_impl3.h"
+#include "processEvents2.h"
 
 using namespace seqan;
 
@@ -69,27 +69,10 @@ int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 		DeltaEvent & e = records[r];
 		if (e.seqs[i] == true) // snp
 		{
-			if (e.type == 0)
-			{
-				assignValue(journal, vp+e.pos, e.snp);
-			}
-			else if (e.type == 1) // del
-			{
-				erase(journal, vp+e.pos, vp + getBorder(e));
-				vp -= e.del;
-			}
-			else if (e.type == 2) // ins
-			{
-				insert(journal, vp+e.pos, e.ins);
-				vp += length(e.ins);
-			}
-			else // sv
-			{
-				erase(journal, vp+e.pos, vp + getBorder(e));
-				insert(journal, vp+e.pos, e.sv.i2);
-				vp += length(e.sv.i2);
-				vp -= e.sv.i1;
-			}
+			erase(journal, vp+e.pos, vp+endPos(e));
+			insert(journal, vp+e.pos, e.ins);
+			vp += length(e.ins);
+			vp -= e.del;
 		}
 	}
 	return 0;
@@ -124,7 +107,7 @@ int eraseZeros(TDeltaEvents & records)
 int printEvent(DeltaEvent & e)
 {
 	if (e.type == 0)
-		std::cout << "SNP at " << e.pos  << " = " << e.snp << " seqs: "
+		std::cout << "SNP at " << e.pos  << " = " << e.ins << " seqs: "
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
 	else if (e.type == 1)
 		std::cout << "DEL at " << e.pos  << " = " << e.del << " seqs: "
@@ -133,7 +116,7 @@ int printEvent(DeltaEvent & e)
 		std::cout << "INS at " << e.pos  << " = " << e.ins << " seqs: "
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
 	else
-		std::cout << "SV at " << e.pos  << " = " << e.sv.i1 << " " << e.sv.i2 << " seqs: "
+		std::cout << "SV at " << e.pos  << " = " << e.del << " " << e.ins << " seqs: "
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
 	return 0;
 }
