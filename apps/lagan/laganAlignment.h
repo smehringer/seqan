@@ -67,10 +67,11 @@ int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 	for (unsigned r = 0; r < length(records); ++r)
 	{
 		DeltaEvent & e = records[r];
-		if (e.seqs[i] == true) // snp
+		if (e.seqs[i] == true)
 		{
 			erase(journal, vp+e.pos, vp+endPos(e));
-			insert(journal, vp+e.pos, e.ins);
+			if (length(e.ins)!=0)
+				insert(journal, vp+e.pos, e.ins);
 			vp += length(e.ins);
 			vp -= e.del;
 		}
@@ -151,7 +152,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	std::cout << "--------------------------------------------------------------\n";
 	std::cout << "Before compression:" << count <<  " Journal Entries\n";
 	std::cout << "--------------------------------------------------------------\n\n";
-	sort(records, CompareByPosAndTypeLessThan_());
+	sort(records, CompareByPosAndTypeLessThan_()); // todo:: needed here?
 //	printEvent(records[0]);
 //	for (unsigned i = 1; i < length(records); ++i)
 //	{
@@ -173,6 +174,8 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 //		printEvent(records[i]);
 
 	std::cout << ref << std::endl;
+
+	sort(records, CompareByPosAndTypeLessThan_());
 
 	typedef typename Value<TSequence>::Type TSeqValue;
 	typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;

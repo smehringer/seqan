@@ -28,6 +28,7 @@ struct DeltaEvent
 
 	//values
 	String<Dna5> ins;
+	unsigned l_ins; // only for debugging reasons...!
 	unsigned del;
 
 	DeltaEvent(unsigned p, unsigned n, unsigned s, unsigned t, String<Dna5> i, unsigned d):
@@ -35,6 +36,7 @@ struct DeltaEvent
 	{
 		resize(seqs, n, false);
 		seqs[s] = true;
+		l_ins = length(i);
 	}
 
 };
@@ -404,6 +406,8 @@ int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
 	unsigned type;
 	String<Dna5> ins = "";
 	unsigned del = d.del;
+	//int vp;
+
 	if (d.pos <= e.pos)
 	{
 		pos = d.pos;
@@ -415,7 +419,8 @@ int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
 	{
 		pos = e.pos;
 		String<Dna5> tmp_ins = infix(ref, e.pos, d.pos);
-		append(ins, tmp_ins); 
+		append(ins, tmp_ins);
+		append(ins, d.ins);
 		del -= (endPos(d) - d.pos); // del = 0 always ?
 	}
 
@@ -443,21 +448,23 @@ int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
 	return 0;
 }
 
-DeltaEvent addEventToPrevious(DeltaEvent & e, DeltaEvent & p)
+DeltaEvent addEventToPrevious(DeltaEvent & e, DeltaEvent & p, int vp)
 {
-	SEQAN_ASSERT(p.pos < e.pos);
+	unsigned pos = e.pos + vp;
+	SEQAN_ASSERT(p.pos < pos);
+	SEQAN_ASSERT((pos-p.pos) < length(p.ins)); // otherwise there would be no dependence...
 	unsigned del = p.del;
 	String<Dna5> ins = "";
 	unsigned type;
 
 	// split p.ins into two at e.pos
 	// insert e.ins there
-	String<Dna5> ins1 = infix(p.ins, 0, (e.pos-p.pos));
+	String<Dna5> ins1 = infix(p.ins, 0, (pos-p.pos));
 	String<Dna5> ins2 = "";
-	if ((e.pos-p.pos+e.del) < length(e.ins))
-		ins2 = infix(p.ins, (e.pos-p.pos+e.del), endPos(p));
+	if ((pos-p.pos+e.del) < length(p.ins))
+		ins2 = infix(p.ins, (pos-p.pos+e.del), length(p.ins));
 	else
-		del += (e.pos-p.pos+e.del) - length(e.ins);
+		del += (pos-p.pos+e.del) - length(p.ins);
 	append(ins, ins1);
 	append(ins, e.ins);
 	append(ins, ins2);
@@ -484,6 +491,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		int tmp_offset = length(best.ins) - best.del;
 
 		String<DeltaEvent> recs;
+		String<int> vps; // store virtual positions in case of multiple events
 		String<bool, Packed<> > unaffected_seqs;
 		resize(unaffected_seqs, length(best.seqs), true);
 		unaffected_seqs &= (~best.seqs);
@@ -502,17 +510,19 @@ int processDR(DependentRegion & dr, TSequence & ref)
 				if(!(testAllZeros(multiple)))
 				{
 					// event must be split up
-					DeltaEvent new_e = addEventToPrevious(e, dr.records[dep_i[r]]);
+					DeltaEvent new_e = addEventToPrevious(e, recs[r], vps[r]);
 					new_e.seqs = multiple;
 					e.seqs &= (~multiple); // remove multiple
 					recs[r].seqs &= (~multiple); // remove multiple
 					if (testAllZeros(recs[r].seqs))
 					{
 						assignValue(recs, r, new_e); // can be replaced
+						assignValue(vps, r, vps[r]+(length(e.ins)-e.del));
 					}
 					else
 					{
 						appendValue(recs, new_e);
+						appendValue(vps, vps[r]+(length(e.ins)-e.del));
 					}
 				}
 				if (testAllZeros(e.seqs))
@@ -520,6 +530,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 			}
 			if (!(testAllZeros(e.seqs)))
 			{
+				appendValue(vps, (length(e.ins)-e.del));
 				processSingleEvent(e, best, ref);
 				appendValue(recs, e);
 			}
@@ -539,8 +550,6 @@ int processDR(DependentRegion & dr, TSequence & ref)
 			}
 		}
 
-		mergeIntoRef(best, ref);
-
 		// now create new event (opposite of best) for all unaffected sequences
 		unsigned del = length(best.ins);
 		String<Dna5> ins = infix(ref, best.pos, endPos(best));
@@ -548,6 +557,8 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		DeltaEvent new_e = DeltaEvent(best.pos, length(best.seqs), 0, type, ins, del);
 		new_e.seqs = unaffected_seqs;
 		append(recs, new_e);
+
+		mergeIntoRef(best, ref);
 
 		// due to extra events or merged event the number of records varies
 		// update dr.dependencies
