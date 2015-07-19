@@ -225,7 +225,7 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 {
 	// subtract all sv's (two JE per sv)
 	int score = - 2*size(e.seqs);
-	std::cout << e.del << " " << e.ins << "\n";
+	//std::cout << e.del << " " << e.ins << "\n";
 	// snp:(++score) because a snp would lead to a sv, one JE must be added
 	// del:(++score) because del would lead to a sv (except if del fully includes event e)
 	// ins:          because an insertion would lead to a sv (no additional JE)
@@ -335,9 +335,9 @@ int updateDependencies(DependentRegion & dr)
 {
 	typedef Pair<unsigned, unsigned> TPair;
 
-	SEQAN_ASSERT_EQ(length(dr.records), length(dr.dependencies));
-	for (unsigned i = 1; i < length(dr.records); ++i) // maybe on the outside
-		clear(dr.dependencies[i]);
+	clear(dr.dependencies);
+	String<unsigned> dep_0 = "";
+	appendValue(dr.dependencies, dep_0); // add string for first record
 
 	String<TPair> dep;
 	TPair pair(0, endPos(dr.records[0]));
@@ -346,15 +346,15 @@ int updateDependencies(DependentRegion & dr)
 	for (unsigned i = 1; i < length(dr.records); ++i)
 	{
 		DeltaEvent & e = dr.records[i];
+		String<unsigned> dep_i = "";
 
 		String<unsigned> toDelete;
-		String<unsigned> toAdd;
 		for (unsigned d = 0; d < length(dep); ++d)
 		{
 			if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
 			{
 				appendValue(dr.dependencies[dep[d].i1], i);
-				appendValue(toAdd, dep[d].i1);
+				appendValue(dep_i, dep[d].i1);
 			}
 			else
 			{
@@ -362,10 +362,15 @@ int updateDependencies(DependentRegion & dr)
 			}
 		}
 		deleteEntries(dep, toDelete); //toDelete == 0?
-		dr.dependencies[i] = toAdd;
+		appendValue(dr.dependencies, dep_i);
 		TPair next(i, endPos(e));
 		appendValue(dep, next);
 	}
+
+	SEQAN_ASSERT(length(dr.dependencies)==length(dr.records));
+	for (unsigned i = 0; i < length(dr.dependencies); ++i)
+		for (unsigned j = 1; j < length(dr.dependencies[i]); ++j)
+			SEQAN_ASSERT(dr.dependencies[i][j] > dr.dependencies[i][j-1]);
 
 	return 0;
 }
@@ -517,7 +522,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 					if (testAllZeros(recs[r].seqs))
 					{
 						assignValue(recs, r, new_e); // can be replaced
-						assignValue(vps, r, vps[r]+(length(e.ins)-e.del));
+						vps[r]+= ((length(e.ins)-e.del));
 					}
 					else
 					{
@@ -562,23 +567,23 @@ int processDR(DependentRegion & dr, TSequence & ref)
 
 		// due to extra events or merged event the number of records varies
 		// update dr.dependencies
-		if (length(recs) >= length(dr.records)) // strings must be added before updateDependencies(dr);
-		{
-			for(unsigned i = 0; i < length(recs)-length(dr.records); ++i)
-			{
-				String<unsigned> dep;
-				appendValue(dr.dependencies, dep);
-			}
-		}
-		else // some strings must be deleted before updateDependencies(dr);
-		{
-			clear(dr.dependencies);
-			for(unsigned i = 0; i < length(recs); ++i)
-			{
-				String<unsigned> dep;
-				appendValue(dr.dependencies, dep);
-			}
-		}
+//		if (length(recs) >= length(dr.records)) // strings must be added before updateDependencies(dr);
+//		{
+//			for(unsigned i = 0; i < length(recs)-length(dr.records); ++i)
+//			{
+//				String<unsigned> dep;
+//				appendValue(dr.dependencies, dep);
+//			}
+//		}
+//		else // some strings must be deleted before updateDependencies(dr);
+//		{
+//			clear(dr.dependencies);
+//			for(unsigned i = 0; i < length(recs); ++i)
+//			{
+//				String<unsigned> dep;
+//				appendValue(dr.dependencies, dep);
+//			}
+//		}
 
 		//update dr and look for other events to merged into ref
 		dr.records = recs;
