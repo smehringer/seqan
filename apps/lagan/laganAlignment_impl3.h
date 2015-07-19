@@ -321,7 +321,7 @@ int parallelFastFirstSeeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & re
 			//}
 				begin_it += offset;
 		}
-	std::cout << "Done " << t << "\tFound " << length(tmp_sets[t]) << " seeds." << std::endl;
+//	std::cout << "Done " << t << "\tFound " << length(tmp_sets[t]) << " seeds." << std::endl;
 	}
 
 	// combine seedSets

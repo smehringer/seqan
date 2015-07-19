@@ -69,7 +69,8 @@ int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 		DeltaEvent & e = records[r];
 		if (e.seqs[i] == true)
 		{
-			erase(journal, vp+e.pos, vp+endPos(e));
+			if (e.del != 0)
+				erase(journal, vp+e.pos, vp+endPos(e));
 			if (length(e.ins)!=0)
 				insert(journal, vp+e.pos, e.ins);
 			vp += length(e.ins);
@@ -173,7 +174,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 //	for (unsigned i = 0; i < length(records); ++i)
 //		printEvent(records[i]);
 
-	std::cout << ref << std::endl;
+//	std::cout << ref << std::endl;
 
 	sort(records, CompareByPosAndTypeLessThan_());
 
@@ -185,7 +186,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 		TJournaledString journal;
 		setHost(journal, ref);
 		transformBack(journal, i, records);
-		std::cout << journal << std::endl;
+//		std::cout << journal << std::endl;
 		std::cout << "Successfully coded and decoded Seq" << i << " ?:" << (journal == seqs[i]) << std::endl;
 		//SEQAN_ASSERT(journal == seqs[i]);
 	}
