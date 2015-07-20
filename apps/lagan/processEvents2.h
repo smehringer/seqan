@@ -551,7 +551,6 @@ int processDR(DependentRegion & dr, TSequence & ref)
 				if (e.pos > endPos(best))
 					e.pos += tmp_offset;
 				appendValue(recs, e);
-				unaffected_seqs &= (~e.seqs);
 			}
 		}
 
@@ -564,26 +563,6 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		append(recs, new_e);
 
 		mergeIntoRef(best, ref);
-
-		// due to extra events or merged event the number of records varies
-		// update dr.dependencies
-//		if (length(recs) >= length(dr.records)) // strings must be added before updateDependencies(dr);
-//		{
-//			for(unsigned i = 0; i < length(recs)-length(dr.records); ++i)
-//			{
-//				String<unsigned> dep;
-//				appendValue(dr.dependencies, dep);
-//			}
-//		}
-//		else // some strings must be deleted before updateDependencies(dr);
-//		{
-//			clear(dr.dependencies);
-//			for(unsigned i = 0; i < length(recs); ++i)
-//			{
-//				String<unsigned> dep;
-//				appendValue(dr.dependencies, dep);
-//			}
-//		}
 
 		//update dr and look for other events to merged into ref
 		dr.records = recs;
@@ -616,8 +595,8 @@ int updateDR(DependentRegion & dr, DeltaEvent & e, TPair & dep)
 	unsigned record_num = length(dr.records); // index in dependent region
 
 	// check which events are influenced by delta event e
-	String<unsigned> toDelete;
-	String<unsigned> toAdd;
+	String<unsigned> toDelete = "";
+	String<unsigned> toAdd = "";
 	for (unsigned d = 0; d < length(dep); ++d)
 	{
 		if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
@@ -648,7 +627,7 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 	//DeltaEvent & first = records[start];
 	// initialize first dependent region
 	appendValue(dr.records, records[start]);
-	String<unsigned> d; // no dependencies for first entry yet
+	String<unsigned> d = ""; // no dependencies for first entry yet
 	appendValue(dr.dependencies, d);
 
 	unsigned drb = endPos(records[start]); // dependent Region Border
