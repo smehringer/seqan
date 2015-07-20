@@ -70,8 +70,8 @@ int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 		DeltaEvent & e = records[r];
 		if (e.seqs[i] == true)
 		{
-			if (pos != 0)
-				SEQAN_ASSERT(pos < e.pos); // assert that no sequence has two events on the same spot
+//			if (pos != 0)
+//				SEQAN_ASSERT(pos < e.pos); // assert that no sequence has two events on the same spot
 			if (e.del != 0)
 				erase(journal, vp+e.pos, vp+endPos(e));
 			if (length(e.ins)!=0)
@@ -104,7 +104,7 @@ int eraseZeros(TDeltaEvents & records)
 {
 	TDeltaEvents tmp_recs;
 	for (unsigned i = 0; i < length(records); ++i)
-		if (size(records[i].seqs)!=0)
+		if (!(testAllZeros(records[i].seqs)))
 			appendValue(tmp_recs, records[i]);
 	records = tmp_recs;
 	return 0;
@@ -118,7 +118,7 @@ int printEvent(DeltaEvent & e)
 	else if (e.type == 1)
 		std::cout << "DEL at " << e.pos  << " = " << e.del << " seqs: "
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
-	else if (e.type == 2)
+	else if (e.type == 3)
 		std::cout << "INS at " << e.pos  << " = " << e.ins << " seqs: "
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
 	else
@@ -180,7 +180,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 
 //	std::cout << ref << std::endl;
 
-	sort(records, CompareByPosAndTypeLessThan_());
+//	sort(records, CompareByPosAndTypeLessThan_());
 
 	typedef typename Value<TSequence>::Type TSeqValue;
 	typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;

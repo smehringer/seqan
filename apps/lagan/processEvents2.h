@@ -49,24 +49,12 @@ struct CompareByPosAndTypeLessThan_
 		{
 			if (lhs.type == rhs.type)
 			{
-				if ((lhs.type == 0) || (lhs.type == 2))
-				{
-					return lhs.ins < rhs.ins;
-				}
-				else if (lhs.type == 1)
-				{
+				if (lhs.ins == rhs.ins)
 					return lhs.del < rhs.del;
-				}
-				else // lhs.type = 3
-				{
-					if (lhs.ins == rhs.ins)
-						return lhs.del < rhs.del;
-					else
-						return lhs.ins < rhs.ins;
-				}
+				else
+					return lhs.ins < rhs.ins;
 			}
-			else
-				return lhs.type < rhs.type;
+			return lhs.type < rhs.type;
 		}
 		return lhs.pos < rhs.pos;
 	}
@@ -270,7 +258,7 @@ int computeEventScores(DependentRegion & dr)
 			score = scoreSNP(dr, e, deps);
 		else if (e.type == 1)
 			score = scoreDEL(dr, e, deps);
-		else if (e.type == 2)
+		else if (e.type == 3)
 			score = scoreINS(dr, e, deps);
 		else
 			score = scoreSV(dr, e, deps);
@@ -300,7 +288,7 @@ int mergeIntoRef(DeltaEvent & e, TSequence & ref)
 		assignValue(journal, e.pos, e.ins[0]);
 	else if (e.type == 1) // del
 		erase(journal, e.pos, endPos(e));
-	else if (e.type == 2) // ins
+	else if (e.type == 3) // ins
 		insert(journal, e.pos, e.ins);
 	else // sv
 	{
@@ -397,9 +385,9 @@ unsigned determineType(unsigned del, String<Dna5> ins)
 	else if (length(ins)==0)
 		type = 1;
 	else if (del == 0)
-		type = 2;
-	else
 		type = 3;
+	else
+		type = 2;
 
 	return type;
 }

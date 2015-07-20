@@ -561,7 +561,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
     			String<Dna5> ins = "";
     			getString(ins, infix);
-    			DeltaEvent rec = DeltaEvent(bH, n, s, 3, ins, (eH-bH));
+    			DeltaEvent rec = DeltaEvent(bH, n, s, 2, ins, (eH-bH));
     			appendValue(records, rec);
     		}
     		else if (eH-bH >= 1)
@@ -579,7 +579,7 @@ int transformIntoJournal(String<DeltaEvent> & records, String<TSeed> & seedChain
     			Infix<Dna5String>::Type infix(sequence, bV, eV);
     			String<Dna5> ins = "";
     			getString(ins, infix);
-    			DeltaEvent rec = DeltaEvent(bH, n, s, 2, ins, 0);
+    			DeltaEvent rec = DeltaEvent(bH, n, s, 3, ins, 0);
     			appendValue(records, rec);
     		}
     	}
