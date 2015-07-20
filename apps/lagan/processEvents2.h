@@ -536,7 +536,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 			if (!(isIn(dep_i, i)) && (i!=best_i))
 			{
 				DeltaEvent & ev = dr.records[i];
-				if (ev.pos > endPos(best))
+				if (ev.pos >= endPos(best))
 					ev.pos += tmp_offset;
 				appendValue(recs, ev);
 				for (unsigned j = 0; j < length(ev.seqs); ++j)
