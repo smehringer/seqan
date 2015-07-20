@@ -535,10 +535,13 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		{
 			if (!(isIn(dep_i, i)) && (i!=best_i))
 			{
-				DeltaEvent & e = dr.records[i];
-				if (e.pos > endPos(best))
-					e.pos += tmp_offset;
-				appendValue(recs, e);
+				DeltaEvent & ev = dr.records[i];
+				if (ev.pos > endPos(best))
+					ev.pos += tmp_offset;
+				appendValue(recs, ev);
+				for (unsigned j = 0; j < length(ev.seqs); ++j)
+					std::cout << ev.seqs[j];
+				std::cout << std::endl;
 			}
 		}
 
@@ -609,7 +612,10 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 {
 	SEQAN_ASSERT(start < length(records));
 	typedef Pair<unsigned, unsigned> TPair;
+	typedef String<bool, Packed<> > TPacked;
 
+	TPacked allZeros;
+	resize(allZeros, length(records[0].seqs), false);
 	String<TPair> dep;
 
 	//DeltaEvent & first = records[start];
@@ -632,6 +638,7 @@ unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 		if (isEqual(e, records[i-1]))
 		{
 			dr.records[length(dr.records)-1].seqs |= e.seqs;
+			e.seqs &= allZeros;
 		}
 		else if (e.pos < drb) // e is inside dependent region dr
 		{
