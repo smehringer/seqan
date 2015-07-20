@@ -462,7 +462,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
     for(unsigned i = 0; i < length(lagan_parameter); ++i)
     {
         int q = lagan_parameter[i];
-        std::cout << "q = " << q << std::endl;
+//        std::cout << "q = " << q << std::endl;
 
         clear(fields);
         computeSearchFields(fields, posV, posH, seq, ref, q, q);
@@ -613,7 +613,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 //	for (TIter it = begin(tmp_seedSet, Standard()); it != end(tmp_seedSet, Standard()); ++it)
 //		std::cout << *it << std::endl;
 
-	std::cout << "Done Seeding. Start Chaining...\n";
+//	std::cout << "Done Seeding. Start Chaining...\n";
 	if(length(tmp_seedSet) != 0)
 	    chainSeedsGlobally(tmp_seedChain, tmp_seedSet, SparseChaining());
 
@@ -649,12 +649,11 @@ int getDeltaEvents(String<DeltaEvent> & records, TSequence & ref, TSequence & se
     // -----------------------------------------------------------------------
     // Scan query for seeds
     // -----------------------------------------------------------------------
-    std::cout << "### Seeding...";
+    std::cout << "### Seeding & Chaning...";
     timestamp();
     seeding(seedSet, index, ref, seq, lagan_parameter);
     SEQAN_ASSERT(length(seedSet)!=0);
     
-    std::cout << "### Chaining...";
     chainSeedsGlobally(seedChain, seedSet, SparseChaining());
 //    for (unsigned i = 0; i < length(seedChain); ++i)
 //        std::cout << seedChain[i] << std::endl;

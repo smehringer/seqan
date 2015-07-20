@@ -63,18 +63,22 @@ template<typename TJournal, typename TDeltaEvents>
 int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 {
 	int vp = 0; // stores virtual position when altering the journaled string
+	unsigned pos = 0;
 
 	for (unsigned r = 0; r < length(records); ++r)
 	{
 		DeltaEvent & e = records[r];
 		if (e.seqs[i] == true)
 		{
+			if (pos != 0)
+				SEQAN_ASSERT(pos < e.pos); // assert that no sequence has two events on the same spot
 			if (e.del != 0)
 				erase(journal, vp+e.pos, vp+endPos(e));
 			if (length(e.ins)!=0)
 				insert(journal, vp+e.pos, e.ins);
 			vp += length(e.ins);
 			vp -= e.del;
+			pos = e.pos;
 		}
 	}
 	return 0;
@@ -168,7 +172,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	eraseZeros(records);
 
 	count = countRecords(records);
-	std::cout << "\n--------------------------------------------------------------\n";
+	std::cout << "--------------------------------------------------------------\n";
 	std::cout << "After compression:" << count <<  " Journal Entries\n";
 	std::cout << "--------------------------------------------------------------\n\n";
 //	for (unsigned i = 0; i < length(records); ++i)
@@ -187,7 +191,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 		setHost(journal, ref);
 		transformBack(journal, i, records);
 //		std::cout << journal << std::endl;
-		std::cout << "Successfully coded and decoded Seq" << i << " ?:" << (journal == seqs[i]) << std::endl;
+		std::cout << "Successfully coded and decoded Seq" << i << "?:\t" << (journal == seqs[i]) << std::endl;
 		//SEQAN_ASSERT(journal == seqs[i]);
 	}
     return 0;
