@@ -60,6 +60,14 @@ struct CompareByPosAndTypeLessThan_
 	}
 };
 
+struct CompareByPosLessThan_
+{
+	inline bool operator()(DeltaEvent const &lhs, DeltaEvent const &rhs)
+	{
+		return lhs.pos < rhs.pos;
+	}
+};
+
 struct DependentRegion
 {
 	typedef String<DeltaEvent> TDeltaEvents;
@@ -539,9 +547,6 @@ int processDR(DependentRegion & dr, TSequence & ref)
 				if (ev.pos >= endPos(best))
 					ev.pos += tmp_offset;
 				appendValue(recs, ev);
-				for (unsigned j = 0; j < length(ev.seqs); ++j)
-					std::cout << ev.seqs[j];
-				std::cout << std::endl;
 			}
 		}
 
@@ -559,7 +564,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		dr.records = recs;
 		dr.bestScoringDeltaEvent.i1 = 0;
 		dr.bestScoringDeltaEvent.i2 = 0;
-		sort(dr.records, CompareByPosAndTypeLessThan_());
+		sort(dr.records, CompareByPosLessThan_());
 		updateDependencies(dr);
 		computeEventScores(dr);
 		better = dr.bestScoringDeltaEvent.i2 < 0;
