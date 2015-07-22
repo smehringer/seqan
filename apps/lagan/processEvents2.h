@@ -17,6 +17,16 @@ using namespace seqan;
 // ============================================================================
 // Tags, Classes, Enums
 // ============================================================================
+
+enum DeltaEventType
+{
+	DELTA_EVENT_SNP = 0,
+	DELTA_EVENT_DEL = 1,
+	DELTA_EVENT_SV  = 2,
+	DELTA_EVENT_INS = 3
+};
+
+
 //template<typename TValue>
 struct DeltaEvent
 {
@@ -24,14 +34,15 @@ struct DeltaEvent
 
 	unsigned pos; // absolute position in reference sequence
 	String<bool, Packed<> > seqs;
-	unsigned type; // 0 = SNP, Del = 1, Ins = 2, SV = 3
+	DeltaEventType type;
+	//unsigned type; // 0 = SNP, Del = 1, Ins = 2, SV = 3
 
 	//values
 	String<Dna5> ins;
 	unsigned l_ins; // only for debugging reasons...!
 	unsigned del;
 
-	DeltaEvent(unsigned p, unsigned n, unsigned s, unsigned t, String<Dna5> i, unsigned d):
+	DeltaEvent(unsigned p, unsigned n, unsigned s, DeltaEventType t, String<Dna5> i, unsigned d):
 		pos(p), type(t), ins(i), del(d)
 	{
 		resize(seqs, n, false);
@@ -171,9 +182,9 @@ int scoreDEL(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
-		if (e2.type == 1) // del
+		if (e2.type == DELTA_EVENT_DEL) // del
 			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
 				score += size(e2.seqs);
 		combineOR(tmp_seqs, e2.seqs);
@@ -204,7 +215,7 @@ int scoreINS(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
 		combineOR(tmp_seqs, e2.seqs);
 		if (score > 0)
@@ -234,9 +245,9 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
-		if (e2.type == 1) // del
+		if (e2.type == DELTA_EVENT_DEL) // del
 			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
 				score += size(e2.seqs);
 		combineOR(tmp_seqs, e2.seqs);
@@ -262,11 +273,11 @@ int computeEventScores(DependentRegion & dr)
 		DeltaEvent & e = dr.records[i];
 		String<unsigned> & deps = dr.dependencies[i];
 		int score;
-		if (e.type == 0)
+		if (e.type == DELTA_EVENT_SNP)
 			score = scoreSNP(dr, e, deps);
-		else if (e.type == 1)
+		else if (e.type == DELTA_EVENT_DEL)
 			score = scoreDEL(dr, e, deps);
-		else if (e.type == 3)
+		else if (e.type == DELTA_EVENT_INS)
 			score = scoreINS(dr, e, deps);
 		else
 			score = scoreSV(dr, e, deps);
@@ -292,11 +303,11 @@ int mergeIntoRef(DeltaEvent & e, TSequence & ref)
 	TJournaledString journal;
 	setHost(journal, ref);
 
-	if (e.type == 0) // snp
+	if (e.type == DELTA_EVENT_SNP) // snp
 		assignValue(journal, e.pos, e.ins[0]);
-	else if (e.type == 1) // del
+	else if (e.type == DELTA_EVENT_DEL) // del
 		erase(journal, e.pos, endPos(e));
-	else if (e.type == 3) // ins
+	else if (e.type == DELTA_EVENT_INS) // ins
 		insert(journal, e.pos, e.ins);
 	else // sv
 	{
@@ -384,18 +395,18 @@ bool isIn(TList & list, TNeedle & needle)
 }
 
 // ------------ new
-unsigned determineType(unsigned del, String<Dna5> ins)
+DeltaEventType determineType(unsigned del, String<Dna5> ins)
 {
-	unsigned type;
+	DeltaEventType type;
 
 	if (length(ins)==1 && del == 1)
-		type = 0;
+		type = DELTA_EVENT_SNP;
 	else if (length(ins)==0)
-		type = 1;
+		type = DELTA_EVENT_DEL;
 	else if (del == 0)
-		type = 3;
+		type = DELTA_EVENT_INS;
 	else
-		type = 2;
+		type = DELTA_EVENT_SV;
 
 	return type;
 }
@@ -404,7 +415,7 @@ template<typename TSequence>
 int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
 {
 	unsigned pos;
-	unsigned type;
+	DeltaEventType type;
 	String<Dna5> ins = "";
 	unsigned del = d.del;
 	//int vp;
@@ -456,7 +467,7 @@ DeltaEvent addEventToPrevious(DeltaEvent & e, DeltaEvent & p, int vp)
 	SEQAN_ASSERT((pos-p.pos) < length(p.ins)); // otherwise there would be no dependence...
 	unsigned del = p.del;
 	String<Dna5> ins = "";
-	unsigned type;
+	DeltaEventType type;
 
 	// split p.ins into two at e.pos
 	// insert e.ins there
@@ -553,7 +564,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		// now create new event (opposite of best) for all unaffected sequences
 		unsigned del = length(best.ins);
 		String<Dna5> ins = infix(ref, best.pos, endPos(best));
-		unsigned type = determineType(del, ins);
+		DeltaEventType type = determineType(del, ins);
 		DeltaEvent new_e = DeltaEvent(best.pos, length(best.seqs), 0, type, ins, del);
 		new_e.seqs = unaffected_seqs;
 		append(recs, new_e);
