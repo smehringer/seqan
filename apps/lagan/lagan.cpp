@@ -56,18 +56,20 @@ struct LaganOptions
     // allocate space for 3 parameter-sets of 3 unsigned
 
     unsigned q; // lagan parameter
-    unsigned bandExtension;
-    unsigned scoreM, scoreMM, scoreG; // scoringsheme
+//    unsigned scoreM, scoreMM, scoreG; // scoringsheme
     unsigned t; // number of threads
+    unsigned mss; // maximum seed size threshold
+    bool ev; // flag: if set, additional evaluation will be performed
 
     seqan::CharString filename;
     seqan::CharString filenameOUT;
 
     LaganOptions() :
         q(4),
-        bandExtension(2),
-        scoreM(0), scoreMM(-1), scoreG(-1), // edit distance
-        t(1)
+//        scoreM(0), scoreMM(-1), scoreG(-1), // edit distance
+        t(1),
+		mss(100),
+		ev(false)
     {}
 };
 
@@ -107,20 +109,27 @@ parseCommandLine(LaganOptions & options, int argc, char const ** argv)
         seqan::ArgParseArgument::INTEGER, "INT",true,1));
     setRequired(parser, "q");
 
-    addOption(parser, seqan::ArgParseOption(
-        "s", "scoringsheme", 
-        "Scoring Sheme: (Match, Mismatch, Gap)",
-        seqan::ArgParseArgument::INTEGER, "INT INT INT",false,3));
-
-    addOption(parser, seqan::ArgParseOption(
-        "be", "bandExtension", 
-        "The allowed extension around seeds that will be used for bandedChainAlignment()",
-        seqan::ArgParseArgument::INTEGER, "INT"));
+//    addOption(parser, seqan::ArgParseOption(
+//        "s", "scoringsheme",
+//        "Scoring Sheme: (Match, Mismatch, Gap)",
+//        seqan::ArgParseArgument::INTEGER, "INT INT INT",false,3));
 
     addOption(parser, seqan::ArgParseOption(
         "t", "threads",
         "The number of threads that can be used.",
         seqan::ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, seqan::ArgParseOption(
+        "mss", "maximum_seed_size",
+        "The threshold in the first seeding step for the maximum seed size.",
+        seqan::ArgParseArgument::INTEGER, "INT"));
+
+    addOption(parser, seqan::ArgParseOption(
+        "ev", "evaluation",
+        "If set, this will trigger an evaluation of the performed algorithm."
+        "Evaluation: number of Journal Entries before and after compression, "
+        "verification whether sequences can be restored correctly,"
+        "estimated bytes of storage needed in memory space."));
 
     // Parse command line.
     seqan::ArgumentParser::ParseResult res = seqan::parse(parser, argc, argv);
@@ -140,12 +149,13 @@ parseCommandLine(LaganOptions & options, int argc, char const ** argv)
         getOptionValue(options.lagan_parameter[i], parser, "q_gram",i);
     }
 
-    getOptionValue(options.scoreM, parser, "scoringsheme",0);
-    getOptionValue(options.scoreMM, parser, "scoringsheme",1);
-    getOptionValue(options.scoreG, parser, "scoringsheme",2);
+//    getOptionValue(options.scoreM, parser, "scoringsheme",0);
+//    getOptionValue(options.scoreMM, parser, "scoringsheme",1);
+//    getOptionValue(options.scoreG, parser, "scoringsheme",2);
 
-    getOptionValue(options.bandExtension, parser, "bandExtension");
     getOptionValue(options.t, parser, "threads");
+    getOptionValue(options.mss, parser, "maximum_seed_size");
+    options.ev = isSet(parser, "evaluation");
 
     return seqan::ArgumentParser::PARSE_OK;
 }
@@ -194,16 +204,16 @@ int main(int argc, char const ** argv)
     for (unsigned i = 1; i < length(seqs); ++i)
         appendValue(seqV, seqs[i]);
 
-    std::cout << "# Length of Sequences. SeqH: " << length(seqH) 
-              << "  SeqV: " << length(seqV) <<"\n";
+    std::cout << "# Length reference sequence: " << length(seqH)
+              << "  Number of to compressed seqs: " << length(seqV) <<"\n";
 
-    Score<int, Simple> scoreScheme(options.scoreM, options.scoreMM, options.scoreG);
+    //Score<int, Simple> scoreScheme(options.scoreM, options.scoreMM, options.scoreG);
 
     // -----------------------------------------------------------------------
     // Compute Alignment
     // -----------------------------------------------------------------------
     std::cout << "# Computing Alignment...\n";
-    laganAlignment(seqH, seqV, options.lagan_parameter /*, scoreScheme*/ );
+    laganAlignment(seqH, seqV, options.lagan_parameter, options.t, options.mss, options.ev);
 
     std::cout << "=====================================================\n" << "DONE\n";
     return 0;

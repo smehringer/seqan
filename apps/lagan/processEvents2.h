@@ -35,7 +35,6 @@ struct DeltaEvent
 	unsigned pos; // absolute position in reference sequence
 	String<bool, Packed<> > seqs;
 	DeltaEventType type;
-	//unsigned type; // 0 = SNP, Del = 1, Ins = 2, SV = 3
 
 	//values
 	String<Dna5> ins;

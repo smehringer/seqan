@@ -122,15 +122,33 @@ int printEvent(DeltaEvent & e)
 		<< e.seqs[0]<< e.seqs[1]<< e.seqs[2] << e.seqs[3] << std::endl;
 	return 0;
 }
+
+template<typename TSequence>
+int evalSeqs(TSequence & ref, String<TSequence> & seqs, String<DeltaEvent> & records)
+{
+	typedef typename Value<TSequence>::Type TSeqValue;
+	typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
+
+	//	std::cout << ref << std::endl;
+	for (unsigned i = 0; i < length(seqs); ++i)
+	{
+		TJournaledString journal;
+		setHost(journal, ref);
+		transformBack(journal, i, records);
+		//std::cout << journal << std::endl;
+		std::cout << "Successfully coded and decoded Seq" << i << "?:\t" << (journal == seqs[i]) << std::endl;
+		//SEQAN_ASSERT(journal == seqs[i]);
+	}
+	return 0;
+}
 // ----------------------------------------------------------------------------
 // Function laganAlignment()                                            [Align]
 // ----------------------------------------------------------------------------
 
-// given only one scoring scheme
-template<typename TSequence /*, typename TScoreValue, typename TScoreSpecAnchor*/>
+template<typename TSequence>
 int laganAlignment(TSequence & ref, String<TSequence> & seqs,
-                   String<unsigned> & lagan_parameter
-                   /*, Score<TScoreValue, TScoreSpecAnchor> const & scoreSchemeAnchor*/)
+                   String<unsigned> & lagan_parameter, unsigned t, unsigned maxSeedSize,
+                   bool eval)
 {
 	typedef Index<TSequence, IndexQGram<SimpleShape, OpenAddressing> > TIndex;
 
@@ -145,15 +163,18 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	for (unsigned i = 0 ; i < length(seqs); ++i)
 	{
 		std::cout << "## SEQUENCE " << i <<"\n";
-        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter/*, scoreSchemeAnchor*/);
+        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize);
         std::cout << "\n";
 	}
 
-	unsigned count = countRecords(records);
-	std::cout << "--------------------------------------------------------------\n";
-	std::cout << "Before compression:" << count <<  " Journal Entries\n";
-	std::cout << "--------------------------------------------------------------\n\n";
-	sort(records, CompareByPosAndTypeLessThan_()); // todo:: needed here?
+	std::cout << "## Start processing delta events...\n";
+	unsigned count;
+	if (eval)
+	{
+		std::cout << "Before compression:" << length(records) <<  " Journal Entries\n";
+		count = countRecords(records);
+		std::cout << "After combining events:" << count <<  " Journal Entries\n";
+	}
 //	printEvent(records[0]);
 //	for (unsigned i = 1; i < length(records); ++i)
 //	{
@@ -166,29 +187,17 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	//std::cout << ref << std::endl;
 	processDeltaEventsOnReference(records, ref);
 	eraseZeros(records);
+	std::cout << "## Done processing delta events.\n";
+	//	for (unsigned i = 0; i < length(records); ++i)
+	//		printEvent(records[i]);
 
-	count = countRecords(records);
-	std::cout << "--------------------------------------------------------------\n";
-	std::cout << "After compression:" << count <<  " Journal Entries\n";
-	std::cout << "--------------------------------------------------------------\n\n";
-//	for (unsigned i = 0; i < length(records); ++i)
-//		printEvent(records[i]);
-
-//	std::cout << ref << std::endl;
-
-//	sort(records, CompareByPosAndTypeLessThan_());
-
-	typedef typename Value<TSequence>::Type TSeqValue;
-	typedef String<TSeqValue, Journaled<Alloc<>, SortedArray, Alloc<> > > TJournaledString;
-
-	for (unsigned i = 0; i < length(seqs); ++i)
+	if (eval)
 	{
-		TJournaledString journal;
-		setHost(journal, ref);
-		transformBack(journal, i, records);
-//		std::cout << journal << std::endl;
-		std::cout << "Successfully coded and decoded Seq" << i << "?:\t" << (journal == seqs[i]) << std::endl;
-		//SEQAN_ASSERT(journal == seqs[i]);
+		count = countRecords(records);
+		std::cout << "After processing events:" << count <<  " Journal Entries\n";
+		evalSeqs(ref, seqs, records);
 	}
+
+
     return 0;
 }
