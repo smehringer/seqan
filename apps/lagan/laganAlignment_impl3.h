@@ -379,7 +379,8 @@ int computeSearchFields(StringSet<SearchField> & fields, TPair & posV, TPair & p
  */
 template<typename TSeed, typename TPairSet, typename TSeq>
 int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
-		             TSeq & ref, TSeq & seq, String<unsigned> & lagan_parameter)
+		             TSeq & ref, TSeq & seq, String<unsigned> & lagan_parameter,
+					 unsigned num_threads)
 {
     typedef SeedSet<TSeed> TSeedSet;
 	typedef Pair<unsigned, unsigned> TPair;
@@ -399,7 +400,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
         clear(fields);
         computeSearchFields(fields, posV, posH, seq, ref, q, q);
 
-        omp_set_num_threads(4);
+        omp_set_num_threads(num_threads);
 		#pragma omp parallel for
         for (unsigned sf = 0; sf < length(fields); ++sf)
         {
@@ -577,7 +578,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 		addSeed(seedSet, seed, Single());
 	}
 
-	iterativeSeeding(seedSet, posV, posH, ref, seq, lagan_parameter);
+	iterativeSeeding(seedSet, posV, posH, ref, seq, lagan_parameter, threads);
 	return 0;
 }
 // ----------------------------------------------------------------------------
