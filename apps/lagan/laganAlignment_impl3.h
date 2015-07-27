@@ -409,22 +409,22 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
             TInfix ref_fragment = infix(ref, fields[sf].beginH, fields[sf].endH);
 
             //generate seeds
-//            if(q < closedAdressingLimit)
-//            {
-//            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], Default());
-//            }
-//            else
-//            {
-//            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
-//            }
             if(q < closedAdressingLimit)
             {
-            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, Default());
+            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], Default());
             }
             else
             {
-            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, OpenAddressing());
+            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
             }
+//            if(q < closedAdressingLimit)
+//            {
+//            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, Default());
+//            }
+//            else
+//            {
+//            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, OpenAddressing());
+//            }
 
             //chain temporary seeds globally
             if(length(tmp_seedSet) != 0)
