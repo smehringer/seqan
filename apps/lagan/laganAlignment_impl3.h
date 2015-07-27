@@ -111,8 +111,8 @@ void timestamp()
  * to a seedSet.
  */
 template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref,
-            TInfix & seq, unsigned q, TIndexTag /*tag*/)
+int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
+		          unsigned q, TIndexTag /*tag*/)
 {
     typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
     typedef typename Iterator<TInfix>::Type TIterator;
@@ -144,6 +144,86 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref,
         	}
         	repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
         }
+    }
+    return 0;
+}
+
+// ----------------------------------------------------------------------------
+// Function parallelSeeding()
+// ----------------------------------------------------------------------------
+/*
+ * Given two sequence (fragments as infixes) the functions builds an index over
+ * the reference and afterwards occurrences of common subsequences of size q are added
+ * to a seedSet.
+ */
+template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
+int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
+                    unsigned q, unsigned num_threads, TIndexTag /*tag*/)
+{
+    typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
+    typedef typename Iterator<TInfix>::Type TIterator;
+    typedef typename Iterator<SeedSet<TSeed> >::Type TIter;
+    typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
+
+    unsigned distance = 0;
+
+    if (int(length(seq)/num_threads) < q)
+    	num_threads = 1;
+
+    //set up for parallelism
+    String<SeedSet<TSeed> > tmp_sets;
+    resize(tmp_sets, num_threads);
+    omp_set_num_threads(num_threads);
+    TIndex index(ref);
+    resize(indexShape(index), q);
+
+    // each thread fills a temporary seedSet
+    #pragma omp parallel for
+    for (unsigned t = 0; t < num_threads; ++t)
+    {
+        typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
+
+        TIterator begin_it = begin(seq)+ t*(int)(length(seq)/num_threads);
+        TIterator end_it;
+        if (t != num_threads-1)
+            end_it = begin_it+ (int)(length(seq)/num_threads);
+        else
+            end_it = end(seq) - q+1;
+
+        //hashInit(shape, begin_it);
+        for(TIterator it = begin_it; it != end_it; it += q)
+        {
+            hash(shape, it);
+            TOccurrences occs = getOccurrences(index, shape);
+            for (unsigned i = 0; i < length(occs); ++i)
+            {
+                TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
+                if (!addSeed(tmp_sets[t], seed, distance, Merge()))
+                    addSeed(tmp_sets[t], seed, Single());
+            }
+        }
+    }
+
+    // combine seedSets
+    for (unsigned t = 0; t < num_threads; ++t)
+    {
+        //std::cout << length(tmp_sets[t]) << std::endl;
+        for (TIter it = begin(tmp_sets[t], Standard()); it != end(tmp_sets[t], Standard()); ++it)
+        {
+
+            TSeed seed = *it;
+            // if begin position of seed lies whithin an overlay area it must be merged
+            if (beginPositionV(seed) < (t * (int)(length(seq)/num_threads) + q + distance))
+            {
+                if (!addSeed(seedSet, seed, distance, Merge()))
+                     addSeed(seedSet, seed, Single());
+            }
+            else
+            {
+                addSeed(seedSet, seed, Single());
+            }
+        }
+
     }
     return 0;
 }
@@ -334,13 +414,21 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
             TInfix ref_fragment = infix(ref, fields[sf].beginH, fields[sf].endH);
 
             //generate seeds
+//            if(q < closedAdressingLimit)
+//            {
+//            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], Default());
+//            }
+//            else
+//            {
+//            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
+//            }
             if(q < closedAdressingLimit)
             {
-            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], Default());
+            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, Default());
             }
             else
             {
-            	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
+            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, OpenAddressing());
             }
 
             //chain temporary seeds globally
