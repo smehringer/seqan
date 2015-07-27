@@ -190,16 +190,21 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
         else
             end_it = end(seq) - q+1;
 
-        //hashInit(shape, begin_it);
-        for(TIterator it = begin_it; it != end_it; it += q)
+        hashInit(shape, begin_it);
+        for(TIterator it = begin_it; it != end_it; goNext(it))
         {
-            hash(shape, it);
+            hashNext(shape, it);
             TOccurrences occs = getOccurrences(index, shape);
             for (unsigned i = 0; i < length(occs); ++i)
             {
-                TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
-                if (!addSeed(tmp_sets[t], seed, distance, Merge()))
-                    addSeed(tmp_sets[t], seed, Single());
+            	TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
+				extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
+				if (endPositionV(seed)>endPosition(seq))
+					setEndPositionV(seed, endPosition(seq));
+				if (endPositionH(seed)>endPosition(ref))
+					setEndPositionH(seed, endPosition(ref));
+				if (!addSeed(seedSet, seed, distance, Merge()))
+					addSeed(seedSet, seed, Single());
             }
         }
     }
@@ -210,18 +215,8 @@ int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
         //std::cout << length(tmp_sets[t]) << std::endl;
         for (TIter it = begin(tmp_sets[t], Standard()); it != end(tmp_sets[t], Standard()); ++it)
         {
-
             TSeed seed = *it;
-            // if begin position of seed lies whithin an overlay area it must be merged
-            if (beginPositionV(seed) < (t * (int)(length(seq)/num_threads) + q + distance))
-            {
-                if (!addSeed(seedSet, seed, distance, Merge()))
-                     addSeed(seedSet, seed, Single());
-            }
-            else
-            {
-                addSeed(seedSet, seed, Single());
-            }
+            addSeed(seedSet, seed, Single());
         }
 
     }
