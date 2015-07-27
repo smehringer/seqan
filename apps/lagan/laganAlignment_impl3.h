@@ -399,6 +399,8 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
         clear(fields);
         computeSearchFields(fields, posV, posH, seq, ref, q, q);
 
+        omp_set_num_threads(4);
+		#pragma omp parallel for
         for (unsigned sf = 0; sf < length(fields); ++sf)
         {
 //        	std::cout << fields[sf].beginV << " "<< fields[sf].endV << " "
@@ -435,6 +437,7 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
 //                std::cout << tmp_seedChain[j] << std::endl;
 
             //add remaining seeds to global seedSet
+			#pragma omp critical
             for (unsigned j = 0; j < length(tmp_seedChain); ++j)
             {
                 TSeed & seed = tmp_seedChain[j];
