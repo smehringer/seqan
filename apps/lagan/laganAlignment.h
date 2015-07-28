@@ -83,14 +83,23 @@ int transformBack(TJournal & journal, unsigned i, TDeltaEvents & records)
 template<typename TDeltaEvents>
 unsigned countRecords(TDeltaEvents & records)
 {
+	unsigned c = 1;
+	for (unsigned i = 1; i < length(records); ++i)
+		if (!(isEqual(records[i], records[i-1])))
+			++c;
+	return c;
+}
+
+template<typename TDeltaEvents>
+unsigned countEntries(TDeltaEvents & records)
+{
 	unsigned c = 0;
 	for (unsigned i = 0; i < length(records); ++i)
 	{
-		if ((records[i].type == 0) | (records[i].type == 1))
+		if ((records[i].type == DELTA_EVENT_DEL))
 			c += size(records[i].seqs);
 		else
-			c += 2*size(records[i].seqs);
-
+			c += size(records[i].seqs)*2;
 	}
 	return c;
 }
@@ -168,12 +177,13 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	}
 
 	std::cout << "## Start processing delta events...\n";
-	unsigned count;
 	if (eval)
 	{
-		std::cout << "Before compression:" << length(records) <<  " Journal Entries\n";
-		count = countRecords(records);
-		std::cout << "After combining events:" << count <<  " Journal Entries\n";
+		std::cout << "### Before compression:" << length(records) <<  " Records == Journal Entries\n";
+		sort(records, CompareByPosAndTypeLessThan_());
+		unsigned countR = countRecords(records);
+		unsigned countE = countEntries(records);
+		std::cout << "### After combining events:" << countR <<  " Records and " << countE << "Journal Entries\n";
 	}
 //	printEvent(records[0]);
 //	for (unsigned i = 1; i < length(records); ++i)
@@ -193,8 +203,8 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 
 	if (eval)
 	{
-		count = countRecords(records);
-		std::cout << "After processing events:" << count <<  " Journal Entries\n";
+		unsigned countE = countEntries(records);
+		std::cout << "### After processing events:" << length(records) <<  " Records and " << countE << "Journal Entries\n";
 		evalSeqs(ref, seqs, records);
 	}
 
