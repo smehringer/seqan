@@ -102,6 +102,15 @@ void timestamp()
     std::cout << "\t\t\t\t" << asctime(localtime(&ltime));
 }
 
+template<typename TIterator>
+bool allN(TIterator start, unsigned l)
+{
+	for(TIterator it = start; it != (start+l); goNext(it))
+		if (*it != 'N')
+			return false;
+	return true;
+}
+
 // ----------------------------------------------------------------------------
 // Function seeding()
 // ----------------------------------------------------------------------------
@@ -126,102 +135,31 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
     hashInit(indexShape(index), begin(seq));
     for(TIterator it = begin(seq); it != (end(seq)-q+1); goNext(it))
     {
-    	unsigned repeat_limit = 0;
-        hashNext(indexShape(index), it);
-        TOccurrences occs = getOccurrences(index, indexShape(index));
-        for (unsigned i = 0; i < length(occs); ++i)
-        {
-        	if ((beginPosition(ref) + occs[i] > repeat_limit) | (beginPosition(ref)+occs[i] == 0))
-        	{
-				TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
-				extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
-				if (endPositionV(seed)>endPosition(seq))
-					setEndPositionV(seed, endPosition(seq));
-				if (endPositionH(seed)>endPosition(ref))
-					setEndPositionH(seed, endPosition(ref));
-				if (!addSeed(seedSet, seed, distance, Merge()))
-					addSeed(seedSet, seed, Single());
-        	}
-        	repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
-        }
-    }
+    	if (!(allN(it, q))) // a q-gram with all N's takes up to much time. should be covered by extendSeed anyway!
+    	{
+			unsigned repeat_limit = 0;
+			hashNext(indexShape(index), it);
+			TOccurrences occs = getOccurrences(index, indexShape(index));
+			for (unsigned i = 0; i < length(occs); ++i)
+			{
+				if ((beginPosition(ref) + occs[i] > repeat_limit) | (beginPosition(ref)+occs[i] == 0))
+				{
+					TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
+					extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
+					if (endPositionV(seed)>endPosition(seq))
+						setEndPositionV(seed, endPosition(seq));
+					if (endPositionH(seed)>endPosition(ref))
+						setEndPositionH(seed, endPosition(ref));
+					if (!addSeed(seedSet, seed, distance, Merge()))
+						addSeed(seedSet, seed, Single());
+				}
+				repeat_limit = beginPosition(ref)+occs[i]+q; // q = length of initial seed
+			}
+		}
+	}
     return 0;
 }
 
-// ----------------------------------------------------------------------------
-// Function parallelSeeding()
-// ----------------------------------------------------------------------------
-/*
- * Given two sequence (fragments as infixes) the functions builds an index over
- * the reference and afterwards occurrences of common subsequences of size q are added
- * to a seedSet.
- */
-template<typename TSeed, typename TSeq, typename TInfix, typename TIndexTag>
-int parallelSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
-                    unsigned q, unsigned num_threads, TIndexTag /*tag*/)
-{
-    typedef Index<TSeq, IndexQGram<SimpleShape, TIndexTag> > TIndex;
-    typedef typename Iterator<TInfix>::Type TIterator;
-    typedef typename Iterator<SeedSet<TSeed> >::Type TIter;
-    typedef String<typename SAValue<Index<TSeq, TIndex> >::Type> TOccurrences;
-
-    unsigned distance = 0;
-
-    if (int(length(seq)/num_threads) < q)
-    	num_threads = 1;
-
-    //set up for parallelism
-    String<SeedSet<TSeed> > tmp_sets;
-    resize(tmp_sets, num_threads);
-    omp_set_num_threads(num_threads);
-    TIndex index(ref);
-    resize(indexShape(index), q);
-
-    // each thread fills a temporary seedSet
-    #pragma omp parallel for
-    for (unsigned t = 0; t < num_threads; ++t)
-    {
-        typename Fibre<TIndex, QGramShape>::Type shape = indexShape(index);
-
-        TIterator begin_it = begin(seq)+ t*(int)(length(seq)/num_threads);
-        TIterator end_it;
-        if (t != num_threads-1)
-            end_it = begin_it+ (int)(length(seq)/num_threads);
-        else
-            end_it = end(seq) - q+1;
-
-        hashInit(shape, begin_it);
-        for(TIterator it = begin_it; it != end_it; goNext(it))
-        {
-            hashNext(shape, it);
-            TOccurrences occs = getOccurrences(index, shape);
-            for (unsigned i = 0; i < length(occs); ++i)
-            {
-            	TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
-				extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
-				if (endPositionV(seed)>endPosition(seq))
-					setEndPositionV(seed, endPosition(seq));
-				if (endPositionH(seed)>endPosition(ref))
-					setEndPositionH(seed, endPosition(ref));
-				if (!addSeed(seedSet, seed, distance, Merge()))
-					addSeed(seedSet, seed, Single());
-            }
-        }
-    }
-
-    // combine seedSets
-    for (unsigned t = 0; t < num_threads; ++t)
-    {
-        //std::cout << length(tmp_sets[t]) << std::endl;
-        for (TIter it = begin(tmp_sets[t], Standard()); it != end(tmp_sets[t], Standard()); ++it)
-        {
-            TSeed seed = *it;
-            addSeed(seedSet, seed, Single());
-        }
-
-    }
-    return 0;
-}
 
 // ----------------------------------------------------------------------------
 // Function scoreSeed()
@@ -420,14 +358,6 @@ int iterativeSeeding(SeedSet<TSeed> & seedSet, TPairSet & posV, TPairSet & posH,
             {
             	nativeSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], OpenAddressing());
             }
-//            if(q < closedAdressingLimit)
-//            {
-//            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, Default());
-//            }
-//            else
-//            {
-//            	parallelSeeding(tmp_seedSet, ref_fragment, seq_fragment, lagan_parameter[i], 4, OpenAddressing());
-//            }
 
             //chain temporary seeds globally
             if(length(tmp_seedSet) != 0)
