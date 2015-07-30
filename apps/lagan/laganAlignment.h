@@ -93,10 +93,17 @@ unsigned countRecords(TDeltaEvents & records)
 template<typename TDeltaEvents>
 unsigned countEntries(TDeltaEvents & records)
 {
-	unsigned c = 0;
-	for (unsigned i = 0; i < length(records); ++i)
+	// does not work 100% correct...
+	// each journaledSring start with one journal entry pointing to the original host sequence
+	unsigned c = length(records[0].seqs);
+	if (records[0].type == DELTA_EVENT_DEL)
+		c += size(records[0].seqs);
+	else
+		c += size(records[0].seqs)*2;
+
+	for (unsigned i = 1; i < length(records); ++i)
 	{
-		if ((records[i].type == DELTA_EVENT_DEL))
+		if (records[i-1].type == DELTA_EVENT_DEL)
 			c += size(records[i].seqs);
 		else
 			c += size(records[i].seqs)*2;
@@ -145,7 +152,10 @@ int evalSeqs(TSequence & ref, String<TSequence> & seqs, String<DeltaEvent> & rec
 		setHost(journal, ref);
 		transformBack(journal, i, records);
 		//std::cout << journal << std::endl;
-		std::cout << "Successfully coded and decoded Seq" << i << "?:\t" << (journal == seqs[i]) << std::endl;
+		std::cout << "Successfully coded and decoded Seq" << i << "?:\t" << (journal == seqs[i])
+				  << "\t" << length(journal._journalEntries._journalNodes) << " Journal Entries; "
+				  << "\t" << length(journal._insertionBuffer) << " length of insertionBuffer"
+				  << std::endl;
 		//SEQAN_ASSERT(journal == seqs[i]);
 	}
 	return 0;
