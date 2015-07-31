@@ -145,11 +145,15 @@ int nativeSeeding(SeedSet<TSeed> & seedSet, TSeq & ref, TInfix & seq,
 				if ((beginPosition(ref) + occs[i] > repeat_limit) | (beginPosition(ref)+occs[i] == 0))
 				{
 					TSeed seed = TSeed(beginPosition(ref) + occs[i], beginPosition(seq) + position(it, seq), q);
-					extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
-					if (endPositionV(seed)>endPosition(seq))
-						setEndPositionV(seed, endPosition(seq));
-					if (endPositionH(seed)>endPosition(ref))
-						setEndPositionH(seed, endPosition(ref));
+//					extendSeed(seed, ref, seq, EXTEND_RIGHT, MatchExtend());
+//					if (beginPositionH(seed)>400)
+//						std::cout << infix(ref, occs[i], occs[i]+q) << " "
+//						          << infix(seq, position(it, seq), position(it, seq)+q) << " "
+//								  << seed << "\n" << std::flush;
+//					if (endPositionV(seed)>endPosition(seq))
+//						setEndPositionV(seed, endPosition(seq));
+//					if (endPositionH(seed)>endPosition(ref))
+//						setEndPositionH(seed, endPosition(ref));
 					if (!addSeed(seedSet, seed, distance, Merge()))
 						addSeed(seedSet, seed, Single());
 				}

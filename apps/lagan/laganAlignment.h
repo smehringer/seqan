@@ -154,12 +154,6 @@ int evalSeqs(TSequence & ref, String<TSequence> & seqs, String<DeltaEvent> & rec
 				  << "\t" << length(journal._journalEntries._journalNodes) << " Journal Entries; "
 				  << "\t" << length(journal._insertionBuffer) << " length of insertionBuffer"
 				  << std::endl;
-//		std::cout << (infix(journal, 0, 480) == infix(seqs[i], 0, 480)) << " "
-//				  << (infix(journal, 480, 483) == infix(seqs[i], 480, 483)) << " "
-//				  << (infix(journal, 483, 825) == infix(seqs[i], 483, 825)) << " "
-//				  << (infix(journal, 825, 827) == infix(seqs[i], 825, 827)) << " "
-//				  << (infix(journal, 827, length(journal)) == infix(seqs[i], 827, length(seqs[i]))) << " "
-//				  << std::endl;
 		//SEQAN_ASSERT(journal == seqs[i]);
 	}
 	return 0;
