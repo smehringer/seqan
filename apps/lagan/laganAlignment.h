@@ -95,15 +95,13 @@ unsigned countEntries(TDeltaEvents & records)
 {
 	// does not work 100% correct...
 	// each journaledSring start with one journal entry pointing to the original host sequence
-	unsigned c = length(records[0].seqs);
-	if (records[0].type == DELTA_EVENT_DEL)
-		c += size(records[0].seqs);
-	else
-		c += size(records[0].seqs)*2;
+	unsigned c;
+	if (length(records) != 0)
+		c = length(records[0].seqs);
 
-	for (unsigned i = 1; i < length(records); ++i)
+	for (unsigned i = 0; i < length(records); ++i)
 	{
-		if (records[i-1].type == DELTA_EVENT_DEL)
+		if (records[i].type == DELTA_EVENT_DEL)
 			c += size(records[i].seqs);
 		else
 			c += size(records[i].seqs)*2;
@@ -156,6 +154,12 @@ int evalSeqs(TSequence & ref, String<TSequence> & seqs, String<DeltaEvent> & rec
 				  << "\t" << length(journal._journalEntries._journalNodes) << " Journal Entries; "
 				  << "\t" << length(journal._insertionBuffer) << " length of insertionBuffer"
 				  << std::endl;
+//		std::cout << (infix(journal, 0, 480) == infix(seqs[i], 0, 480)) << " "
+//				  << (infix(journal, 480, 483) == infix(seqs[i], 480, 483)) << " "
+//				  << (infix(journal, 483, 825) == infix(seqs[i], 483, 825)) << " "
+//				  << (infix(journal, 825, 827) == infix(seqs[i], 825, 827)) << " "
+//				  << (infix(journal, 827, length(journal)) == infix(seqs[i], 827, length(seqs[i]))) << " "
+//				  << std::endl;
 		//SEQAN_ASSERT(journal == seqs[i]);
 	}
 	return 0;
@@ -185,6 +189,8 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
         getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize);
         std::cout << "\n";
 	}
+	if (eval)
+		evalSeqs(ref, seqs, records); // check sequences before processing..
 
 	std::cout << "## Start processing delta events...\n";
 	if (eval)

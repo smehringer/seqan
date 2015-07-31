@@ -110,17 +110,6 @@ unsigned endPos(DeltaEvent & e)
 	return e.pos + e.del; // deletion length
 }
 
-int combineOR(String<bool, Packed<> > & seqs1, String<bool, Packed<> > & seqs2)
-{
-	SEQAN_ASSERT_EQ(length(seqs1), length(seqs2));
-	for (unsigned i = 0; i < length(seqs1); ++i)
-	{
-		bool b = seqs1[i] or seqs2[i];
-		seqs1[i] = b;
-	}
-	return 0;
-}
-
 template < typename TString >
 int deleteEntries(TString & string, String<unsigned> & dels)
 {
@@ -145,20 +134,20 @@ int deleteEntries(TString & string, String<unsigned> & dels)
 int scoreSNP(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 {
 	// score = - size(e.seqs) + (length(e.seqs)-size(e.seqs))
-	int score = (int)length(e.seqs) - 2*size(e.seqs);
+	int score = - size(e.seqs);
 
-	// snp:(--score) because another snp would not be affected by the change
-	// del:(--score) because inside a deletion a snp-change doesn't matter
-	// ins:(--score) because an insertion would just elongate by one character
-	// sv :(--score) because of arguments from del and ins
-	// -> substract all those unaffected sequences
+	// snp:	nothing	 because another snp would not be affected by the change
+	// del:		"	 because inside a deletion a snp-change doesn't matter
+	// ins:		"	 because an insertion would just elongate by one character
+	// sv :		"	 because of arguments from del and ins
 	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
 	resize(tmp_seqs, length(e.seqs), false);
+	tmp_seqs |= e.seqs;
 
 	for (unsigned i = 0; i < length(deps); ++i)
 		tmp_seqs |= dr.records[deps[i]].seqs; // so no sequence is subtracted twice
 
-	score -= size(tmp_seqs);
+	score += (length(e.seqs)-size(tmp_seqs));
 	return score;
 }
 
@@ -186,7 +175,7 @@ int scoreDEL(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 		if (e2.type == DELTA_EVENT_DEL) // del
 			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
 				score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -216,7 +205,7 @@ int scoreINS(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 		DeltaEvent & e2 = dr.records[deps[i]];
 		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -249,7 +238,7 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 		if (e2.type == DELTA_EVENT_DEL) // del
 			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
 				score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -257,7 +246,7 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	// add two JE for every sequence that has no dependent delta event
 	score += 2*(length(e.seqs)-size(tmp_seqs));
 
-	if (score == 0) // if the change would not effect the number of journal entries, a smaller insertion is favoured
+	if (score == 0) // if the change would not effect the number of journal entries, a smaller insertion is favored
 		if (e.del < length(e.ins))
 			--score;
 	return score;
@@ -574,6 +563,7 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		dr.records = recs;
 		dr.bestScoringDeltaEvent.i1 = 0;
 		dr.bestScoringDeltaEvent.i2 = 0;
+
 		sort(dr.records, CompareByPosLessThan_());
 		updateDependencies(dr);
 		computeEventScores(dr);
