@@ -522,7 +522,7 @@ int seeding(SeedSet<TSeed> & seedSet, TIndex & index, TSeq & ref, TSeq & seq,
 template<typename TSequence, typename TIndex>
 int getDeltaEvents(String<DeltaEvent> & records, TSequence & ref, TSequence & seq,
 		           unsigned s, unsigned n, TIndex & index, String<unsigned> & lagan_parameter,
-                   unsigned t, unsigned maxSeedSize)
+                   unsigned t, unsigned maxSeedSize, bool eval)
 {
     typedef Seed<Simple> TSeed;
     typedef SeedSet<TSeed> TSeedSet;
@@ -532,23 +532,31 @@ int getDeltaEvents(String<DeltaEvent> & records, TSequence & ref, TSequence & se
     // -----------------------------------------------------------------------
     // Scan query for seeds
     // -----------------------------------------------------------------------
-    std::cout << "### Seeding & Chaning...";
-    timestamp();
+    if (eval)
+    {
+		std::cout << "### Seeding & Chaning...";
+		timestamp();
+    }
+
     seeding(seedSet, index, ref, seq, lagan_parameter, t, maxSeedSize);
     SEQAN_ASSERT(length(seedSet)!=0);
-    
     chainSeedsGlobally(seedChain, seedSet, SparseChaining());
-//    for (unsigned i = 0; i < length(seedChain); ++i)
-//        std::cout << seedChain[i] << std::endl;
-    std::cout << "### " << length(seedChain) << " seeds were found.";
-    timestamp();
+    
+    if (eval)
+    {
+	    //for (unsigned i = 0; i < length(seedChain); ++i)
+	    //    std::cout << seedChain[i] << std::endl;
+		std::cout << "### " << length(seedChain) << " seeds were found.";
+		timestamp();
+    }
     // -----------------------------------------------------------------------
     // Variant Calling
     // -----------------------------------------------------------------------
-    std::cout << "### Variant Calling...\n";
+    if (eval)
+    	std::cout << "### Variant Calling...\n";
+
     transformIntoJournal(records, seedChain, ref, seq, s, n);
 
-    //timestamp();
     return 0;
 }
 

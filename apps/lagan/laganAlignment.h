@@ -177,11 +177,14 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 
 	String<DeltaEvent> records;
 
+	std::cout << "## Processing Sequences...";
 	for (unsigned i = 0 ; i < length(seqs); ++i)
 	{
-		std::cout << "## SEQUENCE " << i <<"\n";
-        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize);
-        std::cout << "\n";
+		if (eval)
+			std::cout << "\n## SEQUENCE " << i <<"\n";
+		else
+			std::cout << " "<< i;
+        getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize, eval);
 	}
 	if (eval)
 		evalSeqs(ref, seqs, records); // check sequences before processing..
@@ -189,11 +192,11 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	std::cout << "## Start processing delta events...\n";
 	if (eval)
 	{
-		std::cout << "### Before compression:" << length(records) <<  " Records == Journal Entries\n";
+		std::cout << "## Before compression:" << length(records) <<  " Records == Journal Entries\n";
 		sort(records, CompareByPosAndTypeLessThan_());
 		unsigned countR = countRecords(records);
 		unsigned countE = countEntries(records);
-		std::cout << "### After combining events:" << countR <<  " Records and " << countE << "Journal Entries\n";
+		std::cout << "## After combining events:" << countR <<  " Records and " << countE << "Journal Entries\n";
 	}
 //	printEvent(records[0]);
 //	for (unsigned i = 1; i < length(records); ++i)
@@ -214,7 +217,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 	if (eval)
 	{
 		unsigned countE = countEntries(records);
-		std::cout << "### After processing events:" << length(records) <<  " Records and " << countE << "Journal Entries\n";
+		std::cout << "## After processing events:" << length(records) <<  " Records and " << countE << "Journal Entries\n\n";
 		evalSeqs(ref, seqs, records);
 	}
 
