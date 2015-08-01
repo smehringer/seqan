@@ -183,13 +183,13 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 		if (eval)
 			std::cout << "\n## SEQUENCE " << i <<"\n";
 		else
-			std::cout << " "<< i;
+			std::cout << " "<< i << std::flush;
         getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize, eval);
 	}
 	if (eval)
 		evalSeqs(ref, seqs, records); // check sequences before processing..
 
-	std::cout << "## Start processing delta events...\n";
+	std::cout << "\n## Start processing delta events...\n";
 	if (eval)
 	{
 		std::cout << "## Before compression:" << length(records) <<  " Records == Journal Entries\n";
