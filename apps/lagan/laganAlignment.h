@@ -183,7 +183,7 @@ int laganAlignment(TSequence & ref, String<TSequence> & seqs,
 		if (eval)
 			std::cout << "\n## SEQUENCE " << i <<"\n";
 		else
-			std::cout << "\r"<< i << std::flush;
+			std::cout << "\r## Querying Sequence... "<< i << std::flush;
         getDeltaEvents(records, ref, seqs[i], i, length(seqs), index, lagan_parameter, t, maxSeedSize, eval);
 	}
 	if (eval)
