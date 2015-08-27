@@ -201,7 +201,7 @@ int main(int argc, char const ** argv)
     Dna5String seqH;
     String<Dna5String> seqV;
     seqH = seqs[0];
-    for (unsigned i = 1; i < length(seqs); ++i)
+    for (unsigned i = 0; i < length(seqs); ++i)
         appendValue(seqV, seqs[i]);
 
     std::cout << "# Length reference sequence: " << length(seqH)
