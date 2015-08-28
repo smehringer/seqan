@@ -233,11 +233,8 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == DELTA_EVENT_SNP) // snp
+		if ((e2.type == DELTA_EVENT_SNP)||(e2.type == DELTA_EVENT_DEL))// snp
 			score += size(e2.seqs);
-		if (e2.type == DELTA_EVENT_DEL) // del
-			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
-				score += size(e2.seqs);
 		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
