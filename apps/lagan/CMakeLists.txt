@@ -32,7 +32,11 @@ add_definitions (${SEQAN_DEFINITIONS})
 # Update the list of file names below if you add source files to your application.
 add_executable (lagan lagan.cpp 
                       laganAlignment.h
-                      laganAlignment_impl.h)
+                      laganAlignment_impl.h
+                      laganAlignment_impl3.h
+                      processEvents.h
+                      processEvents2.h
+)
 
 # Add dependencies found by find_package (SeqAn).
 target_link_libraries (lagan ${SEQAN_LIBRARIES})
