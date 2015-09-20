@@ -445,32 +445,91 @@ int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
 	return 0;
 }
 
-DeltaEvent addEventToPrevious(DeltaEvent & e, DeltaEvent & p, int vp)
+
+template< typename TRecordAsPair, typename TSequence>
+DeltaEvent processMultipleEvents(TRecordAsPair & rec, DeltaEvent best, DependentRegion & dr, TSequence const& ref)
 {
-	unsigned pos = e.pos + vp;
-	SEQAN_ASSERT(p.pos < pos);
-	SEQAN_ASSERT((pos-p.pos) < length(p.ins)); // otherwise there would be no dependence...
-	unsigned del = p.del;
-	String<Dna5> ins = "";
+	unsigned pos;
 	DeltaEventType type;
+	String<Dna5> ins = "";
+	unsigned del = length(best.ins);
 
-	// split p.ins into two at e.pos
-	// insert e.ins there
-	String<Dna5> ins1 = infix(p.ins, 0, (pos-p.pos));
-	String<Dna5> ins2 = "";
-	if ((pos-p.pos+e.del) < length(p.ins))
-		ins2 = infix(p.ins, (pos-p.pos+e.del), length(p.ins));
+	DeltaEvent first = dr.records[rec.i1[0]];
+	DeltaEvent last  = dr.records[rec.i1[ length(rec.i1)-1 ]];
+	std::cout << length(rec.i1)-1 << std::endl;
+
+	// process first event
+	if (first.pos <= best.pos)
+	{
+		pos = first.pos;
+		append(ins, first.ins);
+		SEQAN_ASSERT(ins == first.ins);
+		SEQAN_ASSERT(endPos(first) < endPos(best)); // otherwise there could be no second event following
+		del += first.del - (endPos(first) - best.pos);
+	}
 	else
-		del += (pos-p.pos+e.del) - length(p.ins);
-	append(ins, ins1);
-	append(ins, e.ins);
-	append(ins, ins2);
+	{
+		pos = best.pos;
+		String<Dna5> tmp_ins = infix(ref, best.pos, first.pos);
+		append(ins, tmp_ins);
+		append(ins, first.ins);
+	}
 
+	//process middle events
+	for (unsigned i = 1; i < length(rec.i1); ++i) // for all events between the first and last
+	{
+		DeltaEvent mid = dr.records[rec.i1[i]];
+		String<Dna5> tmp_ins = infix(ref, endPos(dr.records[rec.i1[i-1]]), mid.pos);
+		append(ins, tmp_ins);
+		append(ins, mid.ins);
+	}
+
+	// process last event
+	if (endPos(last) <= endPos(best))
+	{
+		String<Dna5> tmp_ins = infix(ref, endPos(last), endPos(best));
+		append(ins, tmp_ins);
+	}
+	else
+	{
+		del += (endPos(last) - endPos(best));
+	}
+
+	//determine new type
 	type = determineType(del, ins);
 
-	DeltaEvent new_e = DeltaEvent(p.pos, length(p.seqs), 0, type, ins, del);
+	DeltaEvent new_e = DeltaEvent(pos, length(best.seqs), 0, type, ins, del);
 	new_e.seqs[0] = false; // revert initialization
+	new_e.seqs |= rec.i2; // update seqs
+
 	return new_e;
+}
+
+String<unsigned> mergeInteger(String<unsigned> & s1, String<unsigned> & s2)
+{
+	String<unsigned> s;
+	append(s, s1);
+	for (unsigned i = 0; i < length(s2); ++i)
+		if (!isIn(s, s2[i]))
+			appendValue(s, s2[i]);
+	return s;
+}
+
+bool isSubset(String<unsigned> subset, String<unsigned> set)
+{
+	for (unsigned i = 0; i < length(subset); ++i)
+		if (!isIn(set, subset[i]))
+			return false;
+	return true;
+}
+
+template <typename TRecordAsPair, typename TRecordsAsPairs>
+bool contains(TRecordsAsPairs rec_set, TRecordAsPair rec)
+{
+	for (unsigned j = 0; j < length(rec_set); ++j)
+		if((isSubset(rec.i1, rec_set[j].i1)) && (isSubset(rec_set[j].i1, rec.i1)) && (rec.i2 == rec_set[j].i2))
+			return true;
+	return false;
 }
 
 template<typename TSequence>
@@ -488,50 +547,91 @@ int processDR(DependentRegion & dr, TSequence & ref)
 		int tmp_offset = length(best.ins) - best.del;
 
 		String<DeltaEvent> recs;
-		String<int> vps; // store virtual positions in case of multiple events
 		String<bool, Packed<> > unaffected_seqs;
 		resize(unaffected_seqs, length(best.seqs), true);
 		unaffected_seqs &= (~best.seqs);
 
-		// inside a dependent region an event must not be dependant of every(!) other event
-		// process dependent events
-		for (unsigned d = 0; d < length(dep_i); ++d)
+		// get tuple of events that have common sequences (two dependent events on one sequence)
+		typedef Pair<String<unsigned>, String<bool, Packed<> > > TPair_multiple;
+		String<TPair_multiple> new_recs;
+		String<TPair_multiple> tmp_recs;
+		// initialize
+		for (unsigned i1 = 0; i1 < length(dep_i); ++i1)
 		{
-			DeltaEvent & e = dr.records[dep_i[d]];
-			unaffected_seqs &= (~e.seqs);
+			DeltaEvent e = dr.records[dep_i[i1]];
+			String<unsigned> event_indices;
+			appendValue(event_indices, dep_i[i1]);
+			TPair_multiple pair_m(event_indices, dr.records[dep_i[i1]].seqs);
+			appendValue(tmp_recs, pair_m);
+		}
+		unsigned l = length(tmp_recs);
 
-			// look for previous events on the same seq
-			for (int r = length(recs)-1; r >= 0; --r)
+		// merge dependent events on the same sequence.
+		// result: list of events in 'new_recs' where sequences are now independent.
+		while(l > 0)
+		{
+			// create next level of multiple events by combining those that have sequences in common
+			String<TPair_multiple> new_tmp_recs;
+			for(unsigned i = 0; i < length(tmp_recs); ++i)
 			{
-				String<bool, Packed<> > multiple = e.seqs & recs[r].seqs;
-				if(!(testAllZeros(multiple)))
+				for (unsigned j = i+1; j < length(tmp_recs); ++j)
 				{
-					// event must be split up
-					DeltaEvent new_e = addEventToPrevious(e, recs[r], vps[r]);
-					new_e.seqs = multiple;
-					e.seqs &= (~multiple); // remove multiple
-					recs[r].seqs &= (~multiple); // remove multiple
-					if (testAllZeros(recs[r].seqs))
+					String<bool, Packed<> > multiple = tmp_recs[i].i2 & tmp_recs[j].i2;
+					if(!(testAllZeros(multiple)))
 					{
-						assignValue(recs, r, new_e); // can be replaced
-						vps[r]+= ((length(e.ins)-e.del));
-					}
-					else
-					{
-						appendValue(recs, new_e);
-						appendValue(vps, vps[r]+(length(e.ins)-e.del));
+						String<unsigned> event_indices = mergeInteger(tmp_recs[i].i1, tmp_recs[j].i1);
+						TPair_multiple pair_m(event_indices, multiple);
+						appendValue(new_tmp_recs, pair_m);
 					}
 				}
-				if (testAllZeros(e.seqs))
-					break;
 			}
-			if (!(testAllZeros(e.seqs)))
+
+			// remove possible duplicates
+			String<TPair_multiple> new_tmp_recs_without_duplicates;
+			for (unsigned i = 0; i < length(new_tmp_recs); ++i)
 			{
-				appendValue(vps, (length(e.ins)-e.del));
-				processSingleEvent(e, best, ref);
-				appendValue(recs, e);
+				if (!(contains(new_tmp_recs_without_duplicates, new_tmp_recs[i])))
+					appendValue(new_tmp_recs_without_duplicates, new_tmp_recs[i]);
 			}
+
+			// update current level of events by removing sequence information
+			for(unsigned i = 0; i < length(new_tmp_recs_without_duplicates); ++i)
+			{
+				for(unsigned j = 0; j < length(tmp_recs); ++j)
+				{
+					if (isSubset(tmp_recs[j].i1, new_tmp_recs_without_duplicates[i].i1)) // if tmp_recs[j] is a subset of new_tmp_recs[i]
+					{
+						tmp_recs[j].i2 &= (~new_tmp_recs_without_duplicates[i].i2); // remove sequence information new_tmp_recs[i] from tmp_recs[j]
+					}
+				}
+			}
+
+			// transfer
+			for(unsigned i = 0; i < length(tmp_recs); ++i)
+				if(!(testAllZeros(tmp_recs[i].i2)))
+					appendValue(new_recs, tmp_recs[i]);
+
+			tmp_recs = new_tmp_recs_without_duplicates;
+			l = length(tmp_recs);
 		}
+
+		// now process events
+		for (unsigned i = 0; i < length(new_recs); ++i)
+		{
+			DeltaEvent e = dr.records[new_recs[i].i1[0]];
+			e.seqs = new_recs[i].i2;
+			if (length(new_recs[i].i1) == 1)
+			{
+				processSingleEvent(e, best, ref);
+			}
+			else
+			{
+				e = processMultipleEvents(new_recs[i], best, dr, ref);
+			}
+			appendValue(recs, e);
+			unaffected_seqs &= (~e.seqs);
+		}
+
 
 		// add independent records to recs
 		// apply offset to independent events after best
