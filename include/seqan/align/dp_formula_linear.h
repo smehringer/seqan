@@ -56,63 +56,6 @@ namespace seqan {
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-// Function _computeTraceLinear                        [RecursionDirectionAll]
-// ----------------------------------------------------------------------------
-
-template <typename TScoreValue>
-inline TraceBitMap_::TTraceValue
-_computeTraceLinear(TScoreValue const & globalMax,
-                    TScoreValue const & diagScore,
-                    TScoreValue const & horiScore,
-                    TScoreValue const & vertiScore,
-                    RecursionDirectionAll const &)
-{
-    typename TraceBitMap_::TTraceValue traceValue(TraceBitMap_::NONE);
-
-    _conditionalOrOnEquality(traceValue, globalMax, diagScore, TraceBitMap_::DIAGONAL);
-    _conditionalOrOnEquality(traceValue, globalMax, horiScore, TraceBitMap_::HORIZONTAL);
-    _conditionalOrOnEquality(traceValue, globalMax, vertiScore, TraceBitMap_::VERTICAL);
-    return traceValue;
-}
-
-// ----------------------------------------------------------------------------
-// Function _computeTraceLinear              [RecursionDirectionUpperDiagonal]
-// ----------------------------------------------------------------------------
-
-template <typename TScoreValue>
-inline TraceBitMap_::TTraceValue
-_computeTraceLinear(TScoreValue const & globalMax,
-                    TScoreValue const & diagScore,
-                    TScoreValue const & horiScore,
-                    TScoreValue const &,
-                    RecursionDirectionUpperDiagonal const &)
-{
-    typename TraceBitMap_::TTraceValue traceValue(TraceBitMap_::NONE);
-
-    _conditionalOrOnEquality(traceValue, globalMax, diagScore, TraceBitMap_::DIAGONAL);
-    _conditionalOrOnEquality(traceValue, globalMax, horiScore, TraceBitMap_::HORIZONTAL);
-    return traceValue;
-}
-
-// ----------------------------------------------------------------------------
-// Function _computeTraceLinear              [RecursionDirectionLowerDiagonal]
-// ----------------------------------------------------------------------------
-
-template <typename TScoreValue>
-inline TraceBitMap_::TTraceValue
-_computeTraceLinear(TScoreValue const & globalMax,
-                    TScoreValue const & diagScore,
-                    TScoreValue const &,
-                    TScoreValue const & vertiScore,
-                    RecursionDirectionLowerDiagonal const &)
-{
-    typename TraceBitMap_::TTraceValue traceValue(TraceBitMap_::NONE);
-    _conditionalOrOnEquality(traceValue, globalMax, diagScore, TraceBitMap_::DIAGONAL);
-    _conditionalOrOnEquality(traceValue, globalMax, vertiScore, TraceBitMap_::VERTICAL);
-    return traceValue;
-}
-
-// ----------------------------------------------------------------------------
 // Function _internalComputeScore()
 // ----------------------------------------------------------------------------
 
@@ -124,6 +67,8 @@ _internalComputeScore(DPCell_<TScoreValue, LinearGaps> & activeCell,
                       TTraceValueR,
                       TracebackOff const &)
 {
+//    TScoreValue _MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
+//    activeCell._score = (rightCompare & _MASK) | (activeCell._score & ~_MASK);
     if (activeCell._score < rightCompare)
         activeCell._score = rightCompare;
     return TraceBitMap_::NONE;
@@ -137,12 +82,15 @@ _internalComputeScore(DPCell_<TScoreValue, LinearGaps> & activeCell,
                       TTraceValueR rightTrace,
                       TracebackOn<TracebackConfig_<SingleTrace, TGapsPlacement> > const &)
 {
-    if (activeCell._score < rightCompare)
-    {
-        activeCell._score = rightCompare;
-        return rightTrace;
-    }
-    return leftTrace;
+    const TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
+    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK) ;
+    return (rightTrace & MASK) | (leftTrace & ~MASK);
+//    if (activeCell._score < rightCompare)
+//    {
+//        activeCell._score = rightCompare;
+//        return rightTrace;
+//    }
+//    return leftTrace;
 }
 
 template <typename TScoreValue, typename TTraceValueL, typename TTraceValueR, typename TGapsPlacement>
@@ -153,14 +101,19 @@ _internalComputeScore(DPCell_<TScoreValue, LinearGaps> & activeCell,
                       TTraceValueR rightTrace,
                       TracebackOn<TracebackConfig_<CompleteTrace, TGapsPlacement> > const &)
 {
-    if (activeCell._score <= rightCompare)
-    {
-        if (activeCell._score == rightCompare)
-            return leftTrace | rightTrace;
-        activeCell._score = rightCompare;
-        return rightTrace;
-    }
-    return leftTrace;
+    TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
+    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK);
+    static typename TraceBitMap_::TTraceValue traceTmp = (rightTrace & MASK) | (leftTrace & ~MASK);
+    MASK = -static_cast<TScoreValue>(activeCell._score == rightCompare);
+    return ((traceTmp | rightTrace) & MASK) | (traceTmp & ~MASK);
+//    if (activeCell._score <= rightCompare)
+//    {
+//        if (activeCell._score == rightCompare)
+//            return leftTrace | rightTrace;
+//        activeCell._score = rightCompare;
+//        return rightTrace;
+//    }
+//    return leftTrace;
 }
 
 // ----------------------------------------------------------------------------

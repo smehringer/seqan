@@ -324,10 +324,12 @@ template <typename TValue, typename TSpec, typename TSeqHVal, typename TSeqVVal>
 inline TValue
 score(Score<TValue, TSpec> const & me, TSeqHVal valH, TSeqVVal valV) {
     SEQAN_CHECKPOINT;
-    if (valH == valV)
-        return scoreMatch(me);
-    else
-        return scoreMismatch(me);
+    const TValue MASK = -static_cast<TValue>(valH == valV);
+    return (scoreMatch(me) & MASK) | (scoreMismatch(me) & ~MASK);
+//    if (valH == valV)
+//        return scoreMatch(me);
+//    else
+//        return scoreMismatch(me);
 }
 
 }  // namespace SEQAN_NAMESPACE_MAIN
