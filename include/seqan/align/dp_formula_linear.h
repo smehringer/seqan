@@ -82,15 +82,15 @@ _internalComputeScore(DPCell_<TScoreValue, LinearGaps> & activeCell,
                       TTraceValueR rightTrace,
                       TracebackOn<TracebackConfig_<SingleTrace, TGapsPlacement> > const &)
 {
-    const TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
-    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK) ;
-    return (rightTrace & MASK) | (leftTrace & ~MASK);
-//    if (activeCell._score < rightCompare)
-//    {
-//        activeCell._score = rightCompare;
-//        return rightTrace;
-//    }
-//    return leftTrace;
+//    const TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
+//    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK) ;
+//    return (rightTrace & MASK) | (leftTrace & ~MASK);
+    if (activeCell._score < rightCompare)
+    {
+        activeCell._score = rightCompare;
+        return rightTrace;
+    }
+    return leftTrace;
 }
 
 template <typename TScoreValue, typename TTraceValueL, typename TTraceValueR, typename TGapsPlacement>
@@ -101,19 +101,19 @@ _internalComputeScore(DPCell_<TScoreValue, LinearGaps> & activeCell,
                       TTraceValueR rightTrace,
                       TracebackOn<TracebackConfig_<CompleteTrace, TGapsPlacement> > const &)
 {
-    TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
-    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK);
-    static typename TraceBitMap_::TTraceValue traceTmp = (rightTrace & MASK) | (leftTrace & ~MASK);
-    MASK = -static_cast<TScoreValue>(activeCell._score == rightCompare);
-    return ((traceTmp | rightTrace) & MASK) | (traceTmp & ~MASK);
-//    if (activeCell._score <= rightCompare)
-//    {
-//        if (activeCell._score == rightCompare)
-//            return leftTrace | rightTrace;
-//        activeCell._score = rightCompare;
-//        return rightTrace;
-//    }
-//    return leftTrace;
+//    TScoreValue MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
+//    activeCell._score = (rightCompare & MASK) | (activeCell._score & ~MASK);
+//    static typename TraceBitMap_::TTraceValue traceTmp = (rightTrace & MASK) | (leftTrace & ~MASK);
+//    MASK = -static_cast<TScoreValue>(activeCell._score == rightCompare);
+//    return ((traceTmp | rightTrace) & MASK) | (traceTmp & ~MASK);
+    if (activeCell._score <= rightCompare)
+    {
+        if (activeCell._score == rightCompare)
+            return leftTrace | rightTrace;
+        activeCell._score = rightCompare;
+        return rightTrace;
+    }
+    return leftTrace;
 }
 
 // ----------------------------------------------------------------------------
