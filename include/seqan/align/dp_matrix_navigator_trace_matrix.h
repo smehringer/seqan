@@ -64,12 +64,12 @@ namespace seqan {
 // specifies that this is a trace-matrix navigator while the TTraceFlag can either
 // be TracebackOn to enable the navigator or TracebackOff to disable it.
 // The last parameter specifies the kind of navigation.
-template <typename TValue, typename TTraceFlag>
-class DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise>
+template <typename TValue, typename THost, typename TTraceFlag>
+class DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise>
 {
 public:
 
-    typedef  DPMatrix_<TValue, FullDPMatrix> TDPMatrix_;
+    typedef  DPMatrix_<TValue, FullDPMatrix, THost> TDPMatrix_;
     typedef typename Pointer_<TDPMatrix_>::Type TDPMatrixPointer_;
     typedef typename Iterator<TDPMatrix_, Standard>::Type TDPMatrixIterator;
 
@@ -98,10 +98,10 @@ public:
 // ----------------------------------------------------------------------------
 
 // Initializes the navigator for unbanded alignments.
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & navigator,
-      DPMatrix_<TValue, FullDPMatrix> & dpMatrix,
+_init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & navigator,
+      DPMatrix_<TValue, FullDPMatrix, THost> & dpMatrix,
       DPBandConfig<BandOff> const &)
 {
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -115,13 +115,13 @@ _init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFl
 
 // Initializes the navigator for banded alignments.
 // Note, the band size has a maximal width of length of the vertical sequence.
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & navigator,
-      DPMatrix_<TValue, FullDPMatrix> & dpMatrix,
+_init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & navigator,
+      DPMatrix_<TValue, FullDPMatrix, THost> & dpMatrix,
       DPBandConfig<BandOn> const & band)
 {
-    typedef typename Size<DPMatrix_<TValue, FullDPMatrix> >::Type TMatrixSize;
+    typedef typename Size<DPMatrix_<TValue, FullDPMatrix, THost> >::Type TMatrixSize;
     typedef typename MakeSigned<TMatrixSize>::Type TSignedSize;
 
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -158,18 +158,18 @@ _init(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFl
 // ----------------------------------------------------------------------------
 
 // In the initial column we don't need to do anything because, the navigagtor is already initialized.
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & /*dpNavigator*/,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & /*dpNavigator*/,
             MetaColumnDescriptor<DPInitialColumn, PartialColumnTop> const &,
             FirstCell const &)
 {
     // no-op
 }
 
-template <typename TValue, typename TTraceFlag, typename TColumnLocation>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & /*dpNavigator*/,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & /*dpNavigator*/,
             MetaColumnDescriptor<DPInitialColumn, TColumnLocation> const &,
             FirstCell const &)
 {
@@ -184,9 +184,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // The left cell of the active cell is not valid, beacause we only can come from horizontal direction.
 // The lower left cell of the active cell is the horizontal direction.
 
-template <typename TValue, typename TTraceFlag, typename TColumnType>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, PartialColumnTop> const &,
             FirstCell const &)
 {
@@ -204,9 +204,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // We are in the banded case.
 // The left cell of the active cell represents diagonal direction. The lower left diagonal represents the horizontal direction.
 
-template <typename TValue, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             FirstCell const &)
 {
@@ -221,9 +221,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // ----------------------------------------------------------------------------
 
 // For any other column type and location we can use the same navigation procedure.
-template <typename TValue, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             InnerCell const &)
 {
@@ -237,9 +237,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // Function _goNextCell                         [PartialColumnBottom, LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, PartialColumnBottom> const &,
             LastCell const &)
 {
@@ -251,9 +251,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 
 // If we are in banded case and the band crosses the last row, we have to update
 // the additional leap for the current track.
-template <typename TValue, typename TTraceFlag, typename TColumnType>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, PartialColumnBottom> const &,
             LastCell const &)
 {
@@ -269,9 +269,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // ----------------------------------------------------------------------------
 
 // If we are in the banded case the left cell of the active represents the diagonal direction.
-template <typename TValue, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TTraceFlag, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             LastCell const &)
 {
@@ -285,9 +285,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TT
 // Function _traceHorizontal()
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_traceHorizontal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_traceHorizontal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
                  bool isBandShift)
 {
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -304,9 +304,9 @@ _traceHorizontal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatr
 // Function _traceDiagonal()
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_traceDiagonal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_traceDiagonal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
                bool isBandShift)
 {
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -323,9 +323,9 @@ _traceDiagonal(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix
 // Function _traceVertical()
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TTraceFlag>
+template <typename TValue, typename THost, typename TTraceFlag>
 inline void
-_traceVertical(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_traceVertical(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
                bool /*isBandShift*/)
 {
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -338,9 +338,9 @@ _traceVertical(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix
 // Function setToPosition()
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TTraceFlag, typename TPosition>
+template <typename TValue, typename THost, typename TTraceFlag, typename TPosition>
 inline void
-_setToPosition(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_setToPosition(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
               TPosition const & hostPosition)
 {
     if (IsSameType<TTraceFlag, TracebackOff>::VALUE)
@@ -353,9 +353,9 @@ _setToPosition(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix
 // Sets the host position based on the given horizontal and vertical position. Note that the horizontal and
 // vertical positions must correspond to the correct size of the underlying matrix.
 // For banded matrices the vertical dimension might not equal the length of the vertical sequence.
-template <typename TValue, typename TTraceFlag, typename TPositionH, typename TPositionV>
+template <typename TValue, typename THost, typename TTraceFlag, typename TPositionH, typename TPositionV>
 inline void
-_setToPosition(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
+_setToPosition(DPMatrixNavigator_<DPMatrix_<TValue, FullDPMatrix, THost>, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> & dpNavigator,
               TPositionH const & horizontalPosition,
               TPositionV const & verticalPosition)
 {

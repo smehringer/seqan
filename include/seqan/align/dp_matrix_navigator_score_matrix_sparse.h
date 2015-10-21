@@ -54,11 +54,11 @@ namespace seqan {
 // ----------------------------------------------------------------------------
 
 // Specialization of the score matrix navigator for a sparse dp matrix.
-template <typename TValue>
-class DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise>
+template <typename TValue, typename THost>
+class DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise>
 {
 public:
-    typedef  DPMatrix_<TValue, SparseDPMatrix> TDPMatrix_;
+    typedef  DPMatrix_<TValue, SparseDPMatrix, THost> TDPMatrix_;
     typedef typename Pointer_<TDPMatrix_>::Type TDPMatrixPointer_;
     typedef typename Iterator<TDPMatrix_, Standard>::Type TDPMatrixIterator;
 
@@ -97,10 +97,10 @@ public:
 
 
 // Initializes the navigator for unbanded alignments
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & navigator,
-      DPMatrix_<TValue, SparseDPMatrix> & dpMatrix,
+_init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & navigator,
+      DPMatrix_<TValue, SparseDPMatrix, THost> & dpMatrix,
       DPBandConfig<BandOff> const &)
 {
     navigator._ptrDataContainer = &dpMatrix;
@@ -111,13 +111,13 @@ _init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, Navig
 }
 
 // Initializes the navigator for banded alignments
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & navigator,
-      DPMatrix_<TValue, SparseDPMatrix> & dpMatrix,
+_init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & navigator,
+      DPMatrix_<TValue, SparseDPMatrix, THost> & dpMatrix,
       DPBandConfig<BandOn> const & band)
 {
-    typedef DPMatrix_<TValue, SparseDPMatrix> TSparseDPMatrix;
+    typedef DPMatrix_<TValue, SparseDPMatrix, THost> TSparseDPMatrix;
     typedef typename Size<TSparseDPMatrix>::Type TSize;
     typedef typename MakeSigned<TSize>::Type TSignedSize;
     navigator._ptrDataContainer = &dpMatrix;
@@ -146,9 +146,9 @@ _init(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, Navig
 // Function _goNextCell()        [DPInitialColumn, PartialColumnTop, FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
             MetaColumnDescriptor<DPInitialColumn, PartialColumnTop> const &,
             FirstCell const &)
 {
@@ -159,9 +159,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell()              [DPInitialColumn, FullColumn, FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
             MetaColumnDescriptor<DPInitialColumn, FullColumn> const &,
             FirstCell const &)
 {
@@ -172,9 +172,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell()                          [DPInitialColumn, FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & /*dpNavigator*/,
             MetaColumnDescriptor<DPInitialColumn, TColumnLocation> const &,
             FirstCell const &)
 {
@@ -185,9 +185,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell()                         [PartialColumnTop, FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType>
+template <typename TValue, typename THost, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, PartialColumnTop> const &,
             FirstCell const &)
 {
@@ -201,9 +201,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell()                               [FullColumn, FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType>
+template <typename TValue, typename THost, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, FullColumn> const &,
             FirstCell const &)
 {
@@ -215,9 +215,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell()                                           [FirstCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             FirstCell const &)
 {
@@ -231,9 +231,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                            [DPInitialColumn, InnerCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, TColumnLocation> const &,
             InnerCell const &)
 {
@@ -245,9 +245,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                [DPInitialColumn, FullColumn, InnerCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, FullColumn> const &,
             InnerCell const &)
 {
@@ -259,9 +259,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                                             [InnerCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             InnerCell const &)
 {
@@ -275,9 +275,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                                 [FullColumn, InnerCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType>
+template <typename TValue, typename THost, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, FullColumn> const &,
             InnerCell const &)
 {
@@ -290,9 +290,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                             [DPInitialColumn, LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, TColumnLocation> const &,
             LastCell const &)
 {
@@ -304,9 +304,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell        [DPInitialColumn, PartialColumnBottom, LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, PartialColumnBottom> const &,
             LastCell const &)
 {
@@ -318,9 +318,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                 [DPInitialColumn, FullColumn, LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue>
+template <typename TValue, typename THost>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<DPInitialColumn, FullColumn> const &,
             LastCell const &)
 {
@@ -332,9 +332,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                                              [LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType, typename TColumnLocation>
+template <typename TValue, typename THost, typename TColumnType, typename TColumnLocation>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, TColumnLocation> const &,
             LastCell const &)
 {
@@ -347,9 +347,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // Function _goNextCell                         [PartialColumnBottom, LastCell]
 // ----------------------------------------------------------------------------
 
-template <typename TValue, typename TColumnType>
+template <typename TValue, typename THost, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, PartialColumnBottom> const &,
             LastCell const &)
 {
@@ -365,9 +365,9 @@ _goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix,
 // ----------------------------------------------------------------------------
 
 
-template <typename TValue, typename TColumnType>
+template <typename TValue, typename THost, typename TColumnType>
 inline void
-_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
+_goNextCell(DPMatrixNavigator_<DPMatrix_<TValue, SparseDPMatrix, THost>, DPScoreMatrix, NavigateColumnWise> & dpNavigator,
             MetaColumnDescriptor<TColumnType, FullColumn> const &,
             LastCell const &)
 {
