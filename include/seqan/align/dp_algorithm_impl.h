@@ -273,15 +273,12 @@ _computeCell(TDPScout & scout,
 
     if (TrackingEnabled_<TMetaColumn, TCellDescriptor>::VALUE)
     {
-        typedef typename IsSameType<typename TColumnDescriptor::TColumnProperty,
-            DPFinalColumn>::Type TIsLastColumn;
-        typedef typename And<IsSameType<TCellDescriptor, LastCell>, Or<
-            IsSameType<typename TColumnDescriptor::TLocation,
-            PartialColumnBottom>,IsSameType<
-            typename TColumnDescriptor::TLocation, FullColumn> > >::Type
-            TIsLastRow;
-        _scoutBestScore(scout, activeCell, traceMatrixNavigator,
-                        TIsLastColumn(), TIsLastRow());
+        typedef typename IsSameType<typename TColumnDescriptor::TColumnProperty, DPFinalColumn>::Type TIsLastColumn;
+        typedef typename And<IsSameType<TCellDescriptor, LastCell>,
+                             Or<IsSameType<typename TColumnDescriptor::TLocation, PartialColumnBottom>,
+                                IsSameType<typename TColumnDescriptor::TLocation, FullColumn> >
+                            >::Type TIsLastRow;
+        _scoutBestScore(scout, activeCell, traceMatrixNavigator, TIsLastColumn(), TIsLastRow());
     }
 }
 
@@ -291,8 +288,15 @@ _computeCell(TDPScout & scout,
 
 // Computes one track of the dp algorithm. A track is defined as the area that is filled by the inner loop and
 // iterated by the outer loop. For the column-wise navigation the track is equivalent with the column.
-template <typename TDPScout, typename TDPScoreMatrixNavigator, typename TDPTraceMatrixNavigator, typename TSeqHValue,
-          typename TSeqVValue, typename TSeqVIterator, typename TScoringScheme, typename TColumnDescriptor, typename TDPProfile>
+template <typename TDPScout,
+          typename TDPScoreMatrixNavigator,
+          typename TDPTraceMatrixNavigator,
+          typename TSeqHValue,
+          typename TSeqVValue,
+          typename TSeqVIterator,
+          typename TScoringScheme,
+          typename TColumnDescriptor,
+          typename TDPProfile>
 inline void
 _computeTrack(TDPScout & scout,
               TDPScoreMatrixNavigator & dpScoreMatrixNavigator,
@@ -444,8 +448,13 @@ _computeAlignmentHelperCheckTerminate(DPScout_<TDPCell,Terminator_<TSpec> > cons
 // ----------------------------------------------------------------------------
 
 // Computes the standard DP-algorithm.
-template <typename TDPScout, typename TDPScoreMatrixNavigator, typename TDPTraceMatrixNavigator, typename TSequenceH,
-          typename TSequenceV, typename TScoringScheme, typename TAlignmentAlgo, typename TGapCosts, typename TTraceFlag>
+template <typename TDPScout,
+          typename TDPScoreMatrixNavigator,
+          typename TDPTraceMatrixNavigator,
+          typename TSequenceH,
+          typename TSequenceV,
+          typename TScoringScheme,
+          typename TAlignmentAlgo, typename TGapCosts, typename TTraceFlag, typename TExecPolicy>
 inline void
 _computeUnbandedAlignment(TDPScout & scout,
                           TDPScoreMatrixNavigator & dpScoreMatrixNavigator,
@@ -453,7 +462,7 @@ _computeUnbandedAlignment(TDPScout & scout,
                           TSequenceH const & seqH,
                           TSequenceV const & seqV,
                           TScoringScheme const & scoringScheme,
-                          DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag> const & dpProfile)
+                          DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag, TExecPolicy> const & dpProfile)
 {
     typedef typename Iterator<TSequenceH const, Rooted>::Type TConstSeqHIterator;
     typedef typename Iterator<TSequenceV const, Rooted>::Type TConstSeqVIterator;
@@ -519,9 +528,14 @@ _computeUnbandedAlignment(TDPScout & scout,
 // ----------------------------------------------------------------------------
 
 // Computes the banded DP-algorithm.
-template <typename TDPScout, typename TDPScoreMatrixNavigator, typename TDPTraceMatrixNavigator, typename TSequenceH,
-          typename TSequenceV, typename TScoringScheme, typename TBand, typename TAlignmentAlgo, typename TGapCosts,
-          typename TTraceFlag>
+template <typename TDPScout,
+          typename TDPScoreMatrixNavigator,
+          typename TDPTraceMatrixNavigator,
+          typename TSequenceH,
+          typename TSequenceV,
+          typename TScoringScheme,
+          typename TBand,
+          typename TAlignmentAlgo, typename TGapCosts, typename TTraceFlag, typename TExecPolicy>
 inline void
 _computeBandedAlignment(TDPScout & scout,
                         TDPScoreMatrixNavigator & dpScoreMatrixNavigator,
@@ -530,7 +544,7 @@ _computeBandedAlignment(TDPScout & scout,
                         TSequenceV const & seqV,
                         TScoringScheme const & scoringScheme,
                         TBand const & band,
-                        DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag> const & dpProfile)
+                        DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag, TExecPolicy> const & dpProfile)
 {
     typedef DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag> TDPProfile;
     typedef typename MakeSigned<typename Size<TSequenceH>::Type>::Type TSignedSizeSeqH;
@@ -860,7 +874,7 @@ _computeBandedAlignment(TDPScout & scout,
     }
 }
 
-// TODO(rmaerker): This is denbug code only.
+// TODO(rmaerker): This is debug code only.
 //template <typename TDPScout, typename TDPScoreMatrixNavigator, typename TDPTraceMatrixNavigator, typename TSequenceH,
 //    typename TSequenceV, typename TScoringScheme, typename TBand, typename TAlignmentAlgo, typename TGapCosts,
 //    typename TTraceFlag>
@@ -1179,9 +1193,14 @@ _computeBandedAlignment(TDPScout & scout,
 // ----------------------------------------------------------------------------
 
 // Computes the Hamming-Distance if the band-size is 1.
-template <typename TDPScout, typename TDPScoreMatrixNavigator, typename TDPTraceMatrixNavigator, typename TSequenceH,
-          typename TSequenceV, typename TScoringScheme, typename TBand, typename TAlignmentAlgo, typename TGapCosts,
-          typename TTraceFlag>
+template <typename TDPScout,
+          typename TDPScoreMatrixNavigator,
+          typename TDPTraceMatrixNavigator,
+          typename TSequenceH,
+          typename TSequenceV,
+          typename TScoringScheme,
+          typename TBand,
+          typename TAlignmentAlgo, typename TGapCosts, typename TTraceFlag, typename TExecPolicy>
 inline void
 _computeHammingDistance(TDPScout & scout,
                         TDPScoreMatrixNavigator & dpScoreMatrixNavigator,
@@ -1190,7 +1209,7 @@ _computeHammingDistance(TDPScout & scout,
                         TSequenceV const & seqV,
                         TScoringScheme const & scoringScheme,
                         TBand const & band,
-                        DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag> const &)
+                        DPProfile_<TAlignmentAlgo, TGapCosts, TTraceFlag, TExecPolicy> const &)
 {
     typedef typename MakeSigned<typename Size<TSequenceH const>::Type>::Type TSignedSizeSeqH;
     typedef typename MakeSigned<typename Size<TSequenceV const>::Type>::Type TSignedSizeSeqV;
@@ -1374,34 +1393,37 @@ _correctTraceValue(TTraceNavigator & traceNavigator,
 // Function _computeAligmnment()
 // ----------------------------------------------------------------------------
 
-template <typename TScoreValue, typename TGapScheme, typename TTraceTarget, typename TScoutState, typename TSequenceH, typename TSequenceV,
-          typename TScoreScheme, typename TBandSwitch, typename TAlignmentAlgorithm, typename TTraceFlag>
+template <typename TDPScoreValue, typename TTraceValue, typename TScoreMatHost, typename TTraceMatHost,
+          typename TTraceTarget,
+          typename TScoutState,
+          typename TSequenceH,
+          typename TSequenceV,
+          typename TScoreScheme,
+          typename TBandSwitch,
+          typename TAlignmentAlgorithm, typename TGapScheme, typename TTraceFlag, typename TExecPolicy>
 inline typename Value<TScoreScheme>::Type
-_computeAlignment(DPContext<TScoreValue, TGapScheme> & dpContext,
+_computeAlignment(DPContext<TDPScoreValue, TTraceValue, TScoreMatHost, TTraceMatHost> & dpContext,
                   TTraceTarget & traceSegments,
                   TScoutState & scoutState,
                   TSequenceH const & seqH,
                   TSequenceV const & seqV,
                   TScoreScheme const & scoreScheme,
                   DPBandConfig<TBandSwitch> const & band,
-                  DPProfile_<TAlignmentAlgorithm, TGapScheme, TTraceFlag> const & dpProfile)
+                  DPProfile_<TAlignmentAlgorithm, TGapScheme, TTraceFlag, TExecPolicy> const & dpProfile)
 {
-    typedef typename GetDPScoreMatrix<DPContext<TScoreValue, TGapScheme> >::Type TDPScoreMatrixHost;
-    typedef typename Value<TDPScoreMatrixHost>::Type TDPScoreValue;
-
-    typedef typename GetDPTraceMatrix<DPContext<TScoreValue, TGapScheme> >::Type TDPTraceMatrixHost;
-    typedef typename Value<TDPTraceMatrixHost>::Type TTraceValue;
 
     typedef typename DefaultScoreMatrixSpec_<TAlignmentAlgorithm>::Type TScoreMatrixSpec;
 
-    typedef DPMatrix_<TDPScoreValue, TScoreMatrixSpec> TDPScoreMatrix;
-    typedef DPMatrix_<TTraceValue, FullDPMatrix> TDPTraceMatrix;
+    typedef DPMatrix_<TDPScoreValue, TScoreMatrixSpec, TScoreMatHost>   TDPScoreMatrix;
+    typedef DPMatrix_<TTraceValue, FullDPMatrix, TTraceMatHost>         TDPTraceMatrix;
 
     typedef DPMatrixNavigator_<TDPScoreMatrix, DPScoreMatrix, NavigateColumnWise> TDPScoreMatrixNavigator;
     typedef DPMatrixNavigator_<TDPTraceMatrix, DPTraceMatrix<TTraceFlag>, NavigateColumnWise> TDPTraceMatrixNavigator;
 
     typedef typename ScoutSpecForAlignmentAlgorithm_<TAlignmentAlgorithm>::Type TDPScoutSpec;
     typedef DPScout_<TDPScoreValue, TDPScoutSpec> TDPScout;
+
+    typedef typename Value<TScoreScheme>::Type TScoreValue;
 
     // Check if current dp settings are valid. If not return infinity value for dp score value.
     if (!_isValidDPSettings(seqH, seqV, band, dpProfile))
@@ -1456,14 +1478,7 @@ _computeAlignment(DPContext<TScoreValue, TGapScheme> & dpContext,
         return maxScore(dpScout);
 
     if (IsSingleTrace_<TTraceFlag>::VALUE)
-    {
-        // Check if max was found at the bottom right corner of the matrix.
-        // This is also true if in last row, and last column
-//        if ((maxHostPosition(dpScout) + 1) == (end(dpTraceMatrix) - begin(dpTraceMatrix)))
-
-//            maxHostPosition(dpScout); // We only have the trace value not the score value.
-            _correctTraceValue(dpTraceMatrixNavigator, dpScout);
-    }
+        _correctTraceValue(dpTraceMatrixNavigator, dpScout);
 
 //    _printTracebackMatrix(dpTraceMatrix);
     _computeTraceback(traceSegments, dpTraceMatrixNavigator, dpScout, seqH, seqV, band, dpProfile);
