@@ -115,7 +115,6 @@ public:
         }
         return *this;
     }
-
 };
 
 // Terminator_ Specialization
