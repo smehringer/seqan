@@ -55,10 +55,6 @@ namespace seqan {
 // Functions
 // ============================================================================
 
-// global variable:
-
-int _GLOBAL_MASK = 0;
-
 // ----------------------------------------------------------------------------
 // Function _internalComputeScore      [RecursionDirectionDiagonal, AffineGaps]
 // ----------------------------------------------------------------------------
@@ -72,9 +68,6 @@ _internalComputeScore(DPCell_<TScoreValue, TAffineGaps> & activeCell,
                       TracebackOff const &,
                       RecursionDirectionDiagonal const &)
 {
-//    _GLOBAL_MASK = -static_cast<TScoreValue>(activeCell._score < rightCompare);
-//    activeCell._score = (rightCompare & _GLOBAL_MASK) | (activeCell._score & ~_GLOBAL_MASK);
-
     if(activeCell._score < rightCompare)
         activeCell._score = rightCompare;
     return TraceBitMap_::NONE;
@@ -129,10 +122,6 @@ _internalComputeScore(DPCell_<TScoreValue, AffineGaps> & activeCell,
                       TracebackOff const &,
                       RecursionDirectionHorizontal const &)
 {
-//    _GLOBAL_MASK = -static_cast<TScoreValue>(activeCell._horizontalScore < rightCompare);
-//
-//    activeCell._score = (rightCompare & _GLOBAL_MASK) | (activeCell._horizontalScore & ~_GLOBAL_MASK);
-//    activeCell._horizontalScore = (rightCompare & _GLOBAL_MASK) | (activeCell._horizontalScore & ~_GLOBAL_MASK);
     if(activeCell._horizontalScore < rightCompare)
         activeCell._score = activeCell._horizontalScore = rightCompare;
     else
@@ -191,10 +180,6 @@ _internalComputeScore(DPCell_<TScoreValue, AffineGaps> & activeCell,
                       TracebackOff const &,
                       RecursionDirectionVertical const &)
 {
-//    _GLOBAL_MASK = -static_cast<TScoreValue>(activeCell._verticalScore < rightCompare);
-//
-//    activeCell._score = (rightCompare & _GLOBAL_MASK) | (activeCell._verticalScore & ~_GLOBAL_MASK);
-//    activeCell._verticalScore = (rightCompare & _GLOBAL_MASK) | (activeCell._verticalScore & ~_GLOBAL_MASK);
     if(activeCell._verticalScore < rightCompare)
         activeCell._score = activeCell._verticalScore = rightCompare;
     else
@@ -249,8 +234,6 @@ inline typename TraceBitMap_::TTraceValue
 _internalComputeScore(DPCell_<TScoreValue, AffineGaps> & activeCell,
                       TracebackOff const &)
 {
-//    _GLOBAL_MASK = -static_cast<TScoreValue>(activeCell._score < activeCell._horizontalScore);
-//    activeCell._score = (activeCell._horizontalScore & _GLOBAL_MASK) | (activeCell._score & ~_GLOBAL_MASK);
     if(activeCell._score < activeCell._horizontalScore)
         activeCell._score = activeCell._horizontalScore;
     return TraceBitMap_::NONE;
