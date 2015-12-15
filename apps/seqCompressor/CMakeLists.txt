@@ -1,14 +1,14 @@
 # ===========================================================================
 #                  SeqAn - The Library for Sequence Analysis
 # ===========================================================================
-# File: /apps/lagan/CMakeLists.txt
+# File: /apps/seqComrpessor/CMakeLists.txt
 #
-# CMakeLists.txt file for lagan.
+# CMakeLists.txt file for seqCompressor.
 # ===========================================================================
 
 cmake_minimum_required (VERSION 2.8.2)
-project (seqan_apps_lagan)
-message (STATUS "Configuring apps/lagan")
+project (seqan_apps_seqCompressor)
+message (STATUS "Configuring apps/seqCompressor")
 
 # ----------------------------------------------------------------------------
 # Dependencies
@@ -30,16 +30,14 @@ include_directories (SYSTEM ${SEQAN_INCLUDE_DIRS_DEPS})
 add_definitions (${SEQAN_DEFINITIONS})
 
 # Update the list of file names below if you add source files to your application.
-add_executable (lagan lagan.cpp 
-                      laganAlignment.h
-                      laganAlignment_impl.h
-                      laganAlignment_impl3.h
+add_executable (seqCompressor seqCompressor.cpp 
+                      seqCompressor_base.h
+                      generateEvents.h
                       processEvents.h
-                      processEvents2.h
 )
 
 # Add dependencies found by find_package (SeqAn).
-target_link_libraries (lagan ${SEQAN_LIBRARIES})
+target_link_libraries (seqCompressor ${SEQAN_LIBRARIES})
 
 # Add CXX flags found by find_package (SeqAn).
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
@@ -50,15 +48,15 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SEQAN_CXX_FLAGS}")
 
 # Set variables for installing, depending on the selected build type.
 if (NOT SEQAN_PREFIX_SHARE_DOC)
-  seqan_setup_install_vars (lagan)
+  seqan_setup_install_vars (seqCompressor)
 endif (NOT SEQAN_PREFIX_SHARE_DOC)
 
-# Install lagan in ${PREFIX}/bin directory
-install (TARGETS lagan
+# Install seqCompressor in ${PREFIX}/bin directory
+install (TARGETS seqCompressor
          DESTINATION bin)
 
 # Install non-binary files for the package to "." for app builds and
-# ${PREFIX}/share/doc/lagan for SeqAn release builds.
+# ${PREFIX}/share/doc/seqCompressor for SeqAn release builds.
 install (FILES LICENSE
                README
          DESTINATION ${SEQAN_PREFIX_SHARE_DOC})
@@ -70,18 +68,18 @@ install (FILES LICENSE
 # App Test
 # ----------------------------------------------------------------------------
 
-seqan_add_app_test (lagan)
+seqan_add_app_test (seqCompressor)
 
 # ----------------------------------------------------------------------------
 # CPack Install
 # ----------------------------------------------------------------------------
 
-if (SEQAN_BUILD_SYSTEM STREQUAL "APP:lagan")
-  set (CPACK_PACKAGE_NAME "lagan")
-  set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "lagan")
+if (SEQAN_BUILD_SYSTEM STREQUAL "APP:seqComrpessor")
+  set (CPACK_PACKAGE_NAME "seqCompressor")
+  set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "seqCompressor")
   set (CPACK_DEBIAN_PACKAGE_MAINTAINER "Rene Rahn <rene.rahn@fu-berlin.de>")
   set (CPACK_PACKAGE_VENDOR "Rene Rahn <rene.rahn@fu-berlin.de>")
 
-  seqan_configure_cpack_app (lagan "lagan")
-endif (SEQAN_BUILD_SYSTEM STREQUAL "APP:lagan")
+  seqan_configure_cpack_app (seqCompressor "seqCompressor")
+endif (SEQAN_BUILD_SYSTEM STREQUAL "APP:seqCompressor")
 
