@@ -17,6 +17,16 @@ using namespace seqan;
 // ============================================================================
 // Tags, Classes, Enums
 // ============================================================================
+
+enum DeltaEventType
+{
+	DELTA_EVENT_SNP = 0,
+	DELTA_EVENT_DEL = 1,
+	DELTA_EVENT_SV  = 2,
+	DELTA_EVENT_INS = 3
+};
+
+
 //template<typename TValue>
 struct DeltaEvent
 {
@@ -24,49 +34,21 @@ struct DeltaEvent
 
 	unsigned pos; // absolute position in reference sequence
 	String<bool, Packed<> > seqs;
-	unsigned seq;
-	unsigned type; // 0 = SNP, Del = 1, Ins = 2, SV = 3
+	DeltaEventType type;
 
 	//values
-	char snp;
 	String<Dna5> ins;
+	unsigned l_ins; // only for debugging reasons...!
 	unsigned del;
-	TPair sv;
 
-	DeltaEvent(unsigned p, unsigned s, unsigned n, Dna5 v) : // SNP
-		pos(p), seq(s), type(0), snp(v), ins(0), del(0), sv(0, 0)
+	DeltaEvent(unsigned p, unsigned n, unsigned s, DeltaEventType t, String<Dna5> i, unsigned d):
+		pos(p), type(t), ins(i), del(d)
 	{
 		resize(seqs, n, false);
 		seqs[s] = true;
-		//assignValue(seqs, s, 1);
+		l_ins = length(i);
 	}
 
-	DeltaEvent(unsigned p, unsigned s, unsigned n, TPair v) : // Structural Variation
-		pos(p), seq(s), type(3), snp(0), ins(0), del(0), sv(v)
-	{
-		resize(seqs, n);
-		for(unsigned i = 0; i < n; ++i)
-			seqs[i] = false;
-		seqs[s] = true;
-	}
-
-	DeltaEvent(unsigned p, unsigned s, unsigned n, unsigned v) : // Deletion
-		pos(p), seq(s), type(1), snp(0), ins(0), del(v), sv(0, 0)
-	{
-		resize(seqs, n);
-		for(unsigned i = 0; i < n; ++i)
-			seqs[i] = false;
-		seqs[s] = true;
-	}
-
-	DeltaEvent(unsigned p, unsigned s, unsigned n, String<Dna5> v) : // Insertion
-		pos(p), seq(s), type(2), snp(0), ins(v), del(0), sv(0, 0)
-	{
-		resize(seqs, n);
-		for(unsigned i = 0; i < n; ++i)
-			seqs[i] = false;
-		seqs[s] = true;
-	}
 };
 
 struct CompareByPosAndTypeLessThan_
@@ -77,18 +59,21 @@ struct CompareByPosAndTypeLessThan_
 		{
 			if (lhs.type == rhs.type)
 			{
-				if (lhs.type == 0)
-					return lhs.snp < rhs.snp;
-				else if (lhs.type == 1)
+				if (lhs.ins == rhs.ins)
 					return lhs.del < rhs.del;
-				else if (lhs.type == 2)
+				else
 					return lhs.ins < rhs.ins;
-				else // lhs.type = 3
-					return lhs.sv < rhs.sv; // pair ?
 			}
-			else
-				return lhs.type < rhs.type;
+			return lhs.type < rhs.type;
 		}
+		return lhs.pos < rhs.pos;
+	}
+};
+
+struct CompareByPosLessThan_
+{
+	inline bool operator()(DeltaEvent const &lhs, DeltaEvent const &rhs)
+	{
 		return lhs.pos < rhs.pos;
 	}
 };
@@ -120,26 +105,9 @@ int size(String<bool, Packed<> > & seqs)
 	return s;
 }
 
-unsigned getBorder(DeltaEvent & e)
+unsigned endPos(DeltaEvent & e)
 {
-	if ((e.type == 0) | (e.type == 2)) // snp or insertion
-		return e.pos+1;
-	else if (e.type == 1) // del
-		return e.pos + e.del;
-	else // sv
-		return e.pos + e.sv.i1; // deletion length
-}
-
-int combineOR(String<bool, Packed<> > & seqs1, String<bool, Packed<> > & seqs2)
-{
-	SEQAN_ASSERT_EQ(length(seqs1), length(seqs2));
-//	for (unsigned i = 0; i < length(seqs1); ++i)
-//	{
-//		bool b = seqs1[i] or seqs2[i];
-//		seqs1[i] = b;
-//	}
-	seqs1 |= seqs2;
-	return 0;
+	return e.pos + e.del; // deletion length
 }
 
 template < typename TString >
@@ -163,26 +131,23 @@ int deleteEntries(TString & string, String<unsigned> & dels)
 	return 0;
 }
 
-
 int scoreSNP(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 {
 	// score = - size(e.seqs) + (length(e.seqs)-size(e.seqs))
-	int score = (int)length(e.seqs) - 2*size(e.seqs);
+	int score = - size(e.seqs);
 
-	// snp:(--score) because another snp would not be affected by the change
-	// del:(--score) because inside a deletion a snp-change doesn't matter
-	// ins:(--score) because an insertion would just elongate by one character
-	// sv :(--score) because of arguments from del and ins
-	// -> substract all those unaffected sequences
-	String<bool, Packed<> > tmp_seqs;
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned i = 0; i < length(e.seqs); ++i)
-		tmp_seqs[i] = false;
+	// snp:	nothing	 because another snp would not be affected by the change
+	// del:		"	 because inside a deletion a snp-change doesn't matter
+	// ins:		"	 because an insertion would just elongate by one character
+	// sv :		"	 because of arguments from del and ins
+	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
+	resize(tmp_seqs, length(e.seqs), false);
+	tmp_seqs |= e.seqs;
 
 	for (unsigned i = 0; i < length(deps); ++i)
-		combineOR(tmp_seqs, dr.records[deps[i]].seqs); // so no sequence is subtracted twice
+		tmp_seqs |= dr.records[deps[i]].seqs; // so no sequence is subtracted twice
 
-	score -= size(tmp_seqs);
+	score += (length(e.seqs)-size(tmp_seqs));
 	return score;
 }
 
@@ -198,21 +163,19 @@ int scoreDEL(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	// sv :          because like an insertion the sv just alters without an additional JE
 
 	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned i = 0; i < length(e.seqs); ++i)
-		tmp_seqs[i] = false;
-	combineOR(tmp_seqs, e.seqs);
+	resize(tmp_seqs, length(e.seqs), false);
+	tmp_seqs |= e.seqs;
 
 	// add one JE for each snp or deletion (except if deletion spans over e)
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
-		if (e2.type == 1) // del
-			if ((e.pos > e2.pos) | (getBorder(e) < getBorder(e2))) // if del_e2 does not include del_e
+		if (e2.type == DELTA_EVENT_DEL) // del
+			if ((e.pos > e2.pos) | (endPos(e) < endPos(e2))) // if del_e2 does not include del_e
 				score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -233,18 +196,16 @@ int scoreINS(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	// ins:          because an insertion would lead to a sv (no additional JE)
 	// sv :          because sv would just be altered
 	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned i = 0; i < length(e.seqs); ++i)
-		tmp_seqs[i] = false;
-	combineOR(tmp_seqs, e.seqs);
+	resize(tmp_seqs, length(e.seqs), false);
+	tmp_seqs |= e.seqs;
 
 	// add one JE for each snp
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if (e2.type == DELTA_EVENT_SNP) // snp
 			score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -259,27 +220,22 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 {
 	// subtract all sv's (two JE per sv)
 	int score = - 2*size(e.seqs);
-
+	//std::cout << e.del << " " << e.ins << "\n";
 	// snp:(++score) because a snp would lead to a sv, one JE must be added
 	// del:(++score) because del would lead to a sv (except if del fully includes event e)
 	// ins:          because an insertion would lead to a sv (no additional JE)
 	// sv :          because sv would just be altered
 	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned i = 0; i < length(e.seqs); ++i)
-		tmp_seqs[i] = false;
-	combineOR(tmp_seqs, e.seqs);
+	resize(tmp_seqs, length(e.seqs), false);
+	tmp_seqs |= e.seqs;
 
 	// add one JE for each snp or delettion
 	for (unsigned i = 0; i < length(deps); ++i)
 	{
 		DeltaEvent & e2 = dr.records[deps[i]];
-		if (e2.type == 0) // snp
+		if ((e2.type == DELTA_EVENT_SNP)||(e2.type == DELTA_EVENT_DEL))// snp
 			score += size(e2.seqs);
-		if (e2.type == 1) // del
-			if ((e.pos > e2.pos) | (getBorder(e) < getBorder(e2))) // if del_e2 does not include del_e
-				score += size(e2.seqs);
-		combineOR(tmp_seqs, e2.seqs);
+		tmp_seqs |= e2.seqs;
 		if (score > 0)
 			return 0;
 	}
@@ -287,8 +243,8 @@ int scoreSV(DependentRegion & dr, DeltaEvent & e, String<unsigned> & deps)
 	// add two JE for every sequence that has no dependent delta event
 	score += 2*(length(e.seqs)-size(tmp_seqs));
 
-	if (score == 0) // if the change would not effect the number of journal entries, a smaller insertion is favoured
-		if (e.sv.i1 < length(e.sv.i2))
+	if (score == 0) // if the change would not effect the number of journal entries, a smaller insertion is favored
+		if (e.del < length(e.ins))
 			--score;
 	return score;
 }
@@ -302,11 +258,11 @@ int computeEventScores(DependentRegion & dr)
 		DeltaEvent & e = dr.records[i];
 		String<unsigned> & deps = dr.dependencies[i];
 		int score;
-		if (e.type == 0)
+		if (e.type == DELTA_EVENT_SNP)
 			score = scoreSNP(dr, e, deps);
-		else if (e.type == 1)
+		else if (e.type == DELTA_EVENT_DEL)
 			score = scoreDEL(dr, e, deps);
-		else if (e.type == 2)
+		else if (e.type == DELTA_EVENT_INS)
 			score = scoreINS(dr, e, deps);
 		else
 			score = scoreSV(dr, e, deps);
@@ -332,16 +288,16 @@ int mergeIntoRef(DeltaEvent & e, TSequence & ref)
 	TJournaledString journal;
 	setHost(journal, ref);
 
-	if (e.type == 0) // snp
-		assignValue(journal, e.pos, e.snp);
-	else if (e.type == 1) // del
-		erase(journal, e.pos, getBorder(e));
-	else if (e.type == 2) // ins
+	if (e.type == DELTA_EVENT_SNP) // snp
+		assignValue(journal, e.pos, e.ins[0]);
+	else if (e.type == DELTA_EVENT_DEL) // del
+		erase(journal, e.pos, endPos(e));
+	else if (e.type == DELTA_EVENT_INS) // ins
 		insert(journal, e.pos, e.ins);
 	else // sv
 	{
-		erase(journal, e.pos, getBorder(e));
-		insert(journal, e.pos, e.sv.i2);
+		erase(journal, e.pos, endPos(e));
+		insert(journal, e.pos, e.ins);
 	}
 
 	flatten(journal);
@@ -371,26 +327,26 @@ int updateDependencies(DependentRegion & dr)
 {
 	typedef Pair<unsigned, unsigned> TPair;
 
-	SEQAN_ASSERT_EQ(length(dr.records), length(dr.dependencies));
-	for (unsigned i = 1; i < length(dr.records); ++i) // maybe on the outside
-		clear(dr.dependencies[i]);
+	clear(dr.dependencies);
+	String<unsigned> dep_0 = "";
+	appendValue(dr.dependencies, dep_0); // add string for first record
 
 	String<TPair> dep;
-	TPair pair(0, getBorder(dr.records[0]));
+	TPair pair(0, endPos(dr.records[0]));
 	appendValue(dep, pair);
 
 	for (unsigned i = 1; i < length(dr.records); ++i)
 	{
 		DeltaEvent & e = dr.records[i];
+		String<unsigned> dep_i = "";
 
 		String<unsigned> toDelete;
-		String<unsigned> toAdd;
 		for (unsigned d = 0; d < length(dep); ++d)
 		{
 			if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
 			{
 				appendValue(dr.dependencies[dep[d].i1], i);
-				appendValue(toAdd, dep[d].i1);
+				appendValue(dep_i, dep[d].i1);
 			}
 			else
 			{
@@ -398,492 +354,17 @@ int updateDependencies(DependentRegion & dr)
 			}
 		}
 		deleteEntries(dep, toDelete); //toDelete == 0?
-		dr.dependencies[i] = toAdd;
-		TPair next(i, getBorder(e));
+		appendValue(dr.dependencies, dep_i);
+		TPair next(i, endPos(e));
 		appendValue(dep, next);
 	}
 
-	return 0;
-}
-
-template<typename TSequence>
-int updateSNP(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
-{
-//	std::cout << "included SNP at " << e.pos << " into ref "<< std::endl;
-	typedef Pair<unsigned, String<Dna5> > Tsv;
-
-	String<unsigned> & deps = dr.dependencies[i];
-
-	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned j = 0; j < length(e.seqs); ++j)
-		tmp_seqs[j] = false;
-	combineOR(tmp_seqs, e.seqs);
-
-	// alter sequences with dependent events
-	// only insertion needs an update
-	for (unsigned d = 0; d < length(deps); ++d)
-	{
-		DeltaEvent & dep_e = dr.records[deps[d]];
-		if (dep_e.type == 2) // convert ins to sv
-		{
-			dep_e.type = 3;
-			Tsv sv(1, dep_e.ins);
-			dep_e.sv = sv;
-			dep_e.ins = 0;
-		}
-		combineOR(tmp_seqs, dep_e.seqs);
-	}
-
-	// create new snp for every sequence without an dependent event
-	DeltaEvent new_e = DeltaEvent(e.pos, 0, length(e.seqs), ref[e.pos]);
-	for (unsigned s = 0; s < length(e.seqs); ++s)
-		new_e.seqs[s] = not tmp_seqs[s];
-
-	//erase(dr.records, i)
-	//std::cout << "Before Assignment: "<< dr.records[i].pos << " " << dr.records[i].snp << " seqs: "<< dr.records[i].seqs[0]<< dr.records[i].seqs[1]<< dr.records[i].seqs[2]<< dr.records[i].seqs[3] << std::endl;
-	assignValue(dr.records, i, new_e);
-	//std::cout << "After Assignment: "<< dr.records[i].pos << " " << dr.records[i].snp << " seqs: "<< dr.records[i].seqs[0]<< dr.records[i].seqs[1]<< dr.records[i].seqs[2]<< dr.records[i].seqs[3] << std::endl;
-	//std::cout << "Should be.......: "<< dr.records[i].pos << " " << ref[e.pos] <<  std::endl;
-	return 0;
-}
-
-template<typename TSequence>
-int updateDEL(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
-{
-	std::cout << "included Deletion at " << e.pos << " into ref "<< std::endl;
-	typedef Pair<unsigned, String<Dna5> > Tsv;
-
-	String<unsigned> & deps = dr.dependencies[i];
-
-	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned j = 0; j < length(e.seqs); ++j)
-		tmp_seqs[j] = false;
-	combineOR(tmp_seqs, e.seqs);
-
-	// alter sequences with dependent events
-	for (unsigned d = 0; d < length(deps); ++d)
-	{
-		DeltaEvent & dep_e = dr.records[deps[d]];
-		if (dep_e.type == 0) // snp -> insertion
-		{
-			String<Dna5> ins;
-			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
-			getString(ins, infix);
-			assignValue(ins, abs(dep_e.pos-e.pos), dep_e.snp);
-			dep_e.type = 2;
-			dep_e.ins = ins;
-			dep_e.snp = 0;
-			dep_e.pos = e.pos;
-		}
-		else if (dep_e.type == 1) // del
-		{
-			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix1);
-				getString(ins, infix2);
-				dep_e.type = 2;
-				dep_e.ins = ins;
-				dep_e.del = 0;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
-				getString(ins, infix);
-				unsigned del = getBorder(dep_e) - getBorder(e);
-				dep_e.type = 3;
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-				dep_e.del = 0;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix);
-				unsigned del = e.pos - dep_e.pos;
-				dep_e.type = 3;
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-				dep_e.del = 0;
-			}
-			else
-			{
-				dep_e.del -= e.del;
-			}
-		}
-		else if (dep_e.type == 2) // insertion grows
-		{
-			String<Dna5> ins;
-			Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-			Infix<Dna5String>::Type infix2(ref, dep_e.pos, getBorder(e));
-			getString(ins, infix1);
-			append(ins, dep_e.ins);
-			getString(ins, infix2);
-			dep_e.ins = ins;
-		}
-		else if (dep_e.type == 3) // alter sv
-		{
-			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e))) // sv -> insertion
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix1);
-				append(ins, dep_e.sv.i2);
-				getString(ins, infix2);
-				dep_e.type = 2;
-				dep_e.ins = ins;
-				dep_e.pos = e.pos;
-				//dep_e.sv = 0; todo:: how to set no Null ?
-			}
-			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
-				getString(ins, infix);
-				append(ins, dep_e.sv.i2);
-				unsigned del = getBorder(dep_e) - getBorder(e);
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e)))
-			{
-				String<Dna5> ins = dep_e.sv.i2;
-				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix);
-				unsigned del = e.pos - dep_e.pos;
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-			}
-			else
-			{
-				dep_e.sv.i1 -= e.del;
-			}
-			// else deletion of dep_e covers all of e so no change occurs
-		}
-		combineOR(tmp_seqs, dep_e.seqs);
-	}
-
-	// create new insertion for every sequence without an dependent event
-	String<Dna5> ins;
-	Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
-	getString(ins, infix);
-	DeltaEvent new_e = DeltaEvent(e.pos, 0, length(e.seqs), ins);
-	for (unsigned s = 0; s < length(e.seqs); ++s)
-		new_e.seqs[s] = not tmp_seqs[s];
-
-	//erase(dr.records, i);
-	assignValue(dr.records, i, new_e);
+	SEQAN_ASSERT(length(dr.dependencies)==length(dr.records));
+	for (unsigned i = 0; i < length(dr.dependencies); ++i)
+		for (unsigned j = 1; j < length(dr.dependencies[i]); ++j)
+			SEQAN_ASSERT(dr.dependencies[i][j] > dr.dependencies[i][j-1]);
 
 	return 0;
-}
-
-int updateINS(DependentRegion & dr, DeltaEvent & e, unsigned i)
-{
-	std::cout << "included Insertion at " << e.pos << " into ref "<< std::endl;
-	typedef Pair<unsigned, String<Dna5> > Tsv;
-
-	String<unsigned> & deps = dr.dependencies[i];
-
-	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned j = 0; j < length(e.seqs); ++j)
-		tmp_seqs[j] = false;
-	combineOR(tmp_seqs, e.seqs);
-
-	// alter sequences with dependent events
-	for (unsigned d = 0; d < length(deps); ++d)
-	{
-		DeltaEvent & dep_e = dr.records[deps[d]];
-
-		if (dep_e.type == 0) // snp -> sv
-		{
-			String<Dna5> ins;
-			appendValue(ins, dep_e.snp);
-			Tsv sv(length(e.ins)+1, ins);
-			dep_e.type = 3;
-			dep_e.sv = sv;
-			dep_e.snp = 0;
-			dep_e.pos = e.pos;
-		}
-		else if (dep_e.type == 1) // del : if insertion lies within a deletion, the deletion just gets bigger
-		{
-			dep_e.del += length(e.ins);
-		}
-		else if (dep_e.type == 2) // insertion -> sv
-		{
-			Tsv sv(length(e.ins), dep_e.ins);
-			dep_e.type = 3;
-			dep_e.sv = sv;
-			dep_e.ins = 0;
-		}
-		else if (dep_e.type == 3) // sv : if insertion lies within a deletion of a sv, the deletion just gets bigger
-		{
-			dep_e.sv.i1 += length(e.ins);
-		}
-		combineOR(tmp_seqs, dep_e.seqs);
-	}
-
-	// create new deletion for every sequence without an dependent event
-	unsigned l = length(e.ins);
-	DeltaEvent new_e = DeltaEvent(e.pos, 0, length(e.seqs), l);
-	for (unsigned s = 0; s < length(e.seqs); ++s)
-		new_e.seqs[s] = not tmp_seqs[s];
-
-	//erase(dr.records, i);
-	assignValue(dr.records, i, new_e);
-
-	return 0;
-}
-
-template<typename TSequence>
-int updateSV(DependentRegion & dr, DeltaEvent & e, unsigned i, TSequence & ref)
-{
-	std::cout << "included structural variant at " << e.pos << " into ref "<< std::endl;
-	typedef Pair<unsigned, String<Dna5> > Tsv;
-
-	String<unsigned> & deps = dr.dependencies[i];
-
-	String<bool, Packed<> > tmp_seqs; // seqs that have at least one dependent delta event
-	resize(tmp_seqs, length(e.seqs));
-	for(unsigned j = 0; j < length(e.seqs); ++j)
-		tmp_seqs[j] = false;
-	combineOR(tmp_seqs, e.seqs);
-
-	// alter sequences with dependent events
-	for (unsigned d = 0; d < length(deps); ++d)
-	{
-		DeltaEvent & dep_e = dr.records[deps[d]];
-
-		if (dep_e.type == 0) // snp -> sv
-		{
-			String<Dna5> ins;
-			Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
-			getString(ins, infix);
-			assignValue(ins, abs(dep_e.pos-e.pos), dep_e.snp);
-			unsigned del = length(e.sv.i2);
-			dep_e.type = 3;
-			Tsv sv(del, ins);
-			dep_e.sv = sv;
-			dep_e.snp = 0;
-			dep_e.pos = e.pos;
-		}
-		else if (dep_e.type == 1) // del
-		{
-			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e))) // del -> sv
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix1);
-				getString(ins, infix2);
-				dep_e.type = 3;
-				Tsv sv(length(e.sv.i2), ins);
-				dep_e.sv = sv;
-				dep_e.del = 0;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e))) // del -> sv
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
-				getString(ins, infix);
-				unsigned del = getBorder(dep_e) - getBorder(e);
-				dep_e.type = 3;
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-				dep_e.del = 0;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e))) // del -> sv
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix);
-				unsigned del = e.pos - dep_e.pos + length(e.sv.i2);
-				dep_e.type = 3;
-				Tsv sv(del, ins);
-				dep_e.sv = sv;
-				dep_e.del = 0;
-			}
-			else // del fully includes sv
-			{
-				dep_e.del += ( length(e.sv.i2) - e.sv.i1);
-			}
-		}
-		else if (dep_e.type == 2) // ins -> sv
-		{
-			String<Dna5> ins;
-			Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-			Infix<Dna5String>::Type infix2(ref, dep_e.pos, getBorder(e));
-			getString(ins, infix1);
-			append(ins, dep_e.ins);
-			getString(ins, infix2);
-			std::cout << ins << std::endl;
-			Tsv sv(length(e.sv.i2), ins);
-			dep_e.type = 3;
-			dep_e.sv = sv;
-			dep_e.ins = 0;
-			dep_e.pos = e.pos;
-		}
-		else if (dep_e.type == 3) // alter sv
-		{
-			if ((dep_e.pos >= e.pos) & (getBorder(dep_e) <= getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix1(ref, e.pos, dep_e.pos);
-				Infix<Dna5String>::Type infix2(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix1);
-				append(ins, dep_e.sv.i2);
-				getString(ins, infix2);
-				dep_e.sv.i1 = length(e.sv.i2);
-				dep_e.sv.i2 = ins;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos >= e.pos) & (getBorder(dep_e) > getBorder(e)))
-			{
-				String<Dna5> ins;
-				Infix<Dna5String>::Type infix(ref, e.pos, dep_e.pos);
-				getString(ins, infix);
-				append(ins, dep_e.sv.i2);
-				unsigned del = length(e.sv.i2) + getBorder(dep_e) - getBorder(e);
-				dep_e.sv.i2 = ins;
-				dep_e.sv.i1 = del;
-				dep_e.pos = e.pos;
-			}
-			else if ((dep_e.pos < e.pos) & (getBorder(dep_e) <= getBorder(e)))
-			{
-				String<Dna5> ins = dep_e.sv.i2;
-				Infix<Dna5String>::Type infix(ref, getBorder(dep_e), getBorder(e));
-				getString(ins, infix);
-				unsigned del = length(e.sv.i2) + e.pos - dep_e.pos;
-				dep_e.sv.i1 = del;
-				dep_e.sv.i2 = ins;
-			}
-			else
-			{
-				dep_e.sv.i1 += (length(e.sv.i2) - e.sv.i1);
-			}
-		}
-		combineOR(tmp_seqs, dep_e.seqs);
-	}
-
-	// create new sv for every sequence without an dependent event
-	String<Dna5> ins;
-	Infix<Dna5String>::Type infix(ref, e.pos, getBorder(e));
-	getString(ins, infix);
-	Tsv sv(length(e.sv.i2), ins);
-	DeltaEvent new_e = DeltaEvent(e.pos, 0, length(e.seqs), sv);
-	for (unsigned s = 0; s < length(e.seqs); ++s)
-		new_e.seqs[s] = not tmp_seqs[s];
-
-	//erase(dr.records, i);
-	assignValue(dr.records, i, new_e);
-
-	return 0;
-}
-
-// ----------------------------------------------------------------------------
-// Function processDR()
-// ----------------------------------------------------------------------------
-template<typename TSequence>
-int processDR(DependentRegion & dr, TSequence & ref)
-{
-	std::cout << "star dr\n";
-	for(unsigned i = 0; i < length(dr.records); ++i)
-	{
-		std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
-		for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
-			std::cout << dr.records[i].seqs[j];
-		std::cout << " type:" << dr.records[i].type <<" \n";
-	}
-	computeEventScores(dr);
-	bool better = dr.bestScoringDeltaEvent.i2 < 0;
-	int offset = 0;
-	while (better)
-	{	for(unsigned i = 0; i < length(dr.records); ++i)
-	{
-		std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
-		for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
-			std::cout << dr.records[i].seqs[j];
-		std::cout << " type:" << dr.records[i].type <<" \n";
-	}
-		unsigned best_i = dr.bestScoringDeltaEvent.i1;
-		DeltaEvent & best = dr.records[best_i];
-		DeltaEvent best_copy = dr.records[best_i];
-		int tmp_offset = 0;
-
-		// update other sequences (delta map)
-		if (best.type == 0) // snp
-		{
-			updateSNP(dr, best, best_i, ref);
-		}
-		else if (best.type == 1) // del
-		{
-			tmp_offset = - best.del;
-			updateDEL(dr, best, best_i, ref);
-		}
-		else if (best.type == 2) // ins
-		{
-			tmp_offset = length(best.ins);
-			updateINS(dr, best, best_i);
-		}
-		else // sv
-		{
-			tmp_offset = length(best.sv.i2) - best.sv.i1;
-			updateSV(dr, best, best_i, ref);
-		}
-
-		// include best event into reference
-		mergeIntoRef(best_copy, ref); //todo:: change order of ref and best_copy (seqan-code-style)
-
-		// update tmp_offset on unaffected delta events in dr
-		String<unsigned> dep_i = dr.dependencies[best_i];
-		unsigned start;
-		if (length(dep_i)== 0)
-			start = best_i+1;
-		else
-		{
-			unsigned last_dep = dep_i[length(dep_i)-1];
-			if (last_dep < best_i)
-				start = best_i +1 ;
-			else
-				start = last_dep +1;
-		}
-		applyOffset(dr.records, tmp_offset, start);
-
-		sort(dr.records, CompareByPosAndTypeLessThan_());
-
-		// update dependencies
-		updateDependencies(dr);
-
-		// compute scores again
-		dr.bestScoringDeltaEvent.i2 = 0;
-
-		computeEventScores(dr);
-
-		// set better again
-		better = dr.bestScoringDeltaEvent.i2 < 0;
-		offset += tmp_offset;
-		std::cout << "heloooo\n";
-		for(unsigned i = 0; i < length(dr.records); ++i)
-		{
-			std::cout << "records #" << i << " at " << dr.records[i].pos << " seqs:";
-			for (unsigned j = 0; j < length(dr.records[i].seqs); ++j)
-				std::cout << dr.records[i].seqs[j];
-			std::cout << " type:" << dr.records[i].type <<" \n";
-		}
-	}
-	return offset;
 }
 
 template<typename TList, typename TNeedle>
@@ -898,22 +379,306 @@ bool isIn(TList & list, TNeedle & needle)
 	return false;
 }
 
+// ------------ new
+DeltaEventType determineType(unsigned del, String<Dna5> ins)
+{
+	DeltaEventType type;
+
+	if (length(ins)==1 && del == 1)
+		type = DELTA_EVENT_SNP;
+	else if (length(ins)==0)
+		type = DELTA_EVENT_DEL;
+	else if (del == 0)
+		type = DELTA_EVENT_INS;
+	else
+		type = DELTA_EVENT_SV;
+
+	return type;
+}
+
+template<typename TSequence>
+int processSingleEvent(DeltaEvent & d, DeltaEvent & e, TSequence const& ref)
+{
+	unsigned pos;
+	DeltaEventType type;
+	String<Dna5> ins = "";
+	unsigned del = d.del;
+	//int vp;
+
+	if (d.pos <= e.pos)
+	{
+		pos = d.pos;
+		append(ins, d.ins);
+		SEQAN_ASSERT(ins == d.ins);
+		del -= (endPos(d) - e.pos); // if to much is subtracted it will be corrected afterwards
+	}
+	else
+	{
+		pos = e.pos;
+		String<Dna5> tmp_ins = infix(ref, e.pos, d.pos);
+		append(ins, tmp_ins);
+		append(ins, d.ins);
+		del -= (endPos(d) - d.pos); // del = 0 always ?
+	}
+
+	if (endPos(d) <= endPos(e))
+	{
+		String<Dna5> tmp_ins = infix(ref, endPos(d), endPos(e));
+		append(ins, tmp_ins);
+	}
+	else
+	{
+		del += (endPos(d) - endPos(e));
+	}
+	
+	del += length(e.ins);
+
+	//determine new type
+	type = determineType(del, ins);
+
+	// create new event and replace it with d
+	DeltaEvent new_e = DeltaEvent(pos, length(e.seqs), 0, type, ins, del);
+	new_e.seqs[0] = false; // revert initialization
+	new_e.seqs |= d.seqs; // update seqs
+	d = new_e; // assign event
+
+	return 0;
+}
+
+
+template< typename TRecordAsPair, typename TSequence>
+DeltaEvent processMultipleEvents(TRecordAsPair & rec, DeltaEvent best, DependentRegion & dr, TSequence const& ref)
+{
+	unsigned pos;
+	DeltaEventType type;
+	String<Dna5> ins = "";
+	unsigned del = length(best.ins);
+
+	DeltaEvent first = dr.records[rec.i1[0]];
+	DeltaEvent last  = dr.records[rec.i1[ length(rec.i1)-1 ]];
+	std::cout << length(rec.i1)-1 << std::endl;
+
+	// process first event
+	if (first.pos <= best.pos)
+	{
+		pos = first.pos;
+		append(ins, first.ins);
+		SEQAN_ASSERT(ins == first.ins);
+		SEQAN_ASSERT(endPos(first) < endPos(best)); // otherwise there could be no second event following
+		del += first.del - (endPos(first) - best.pos);
+	}
+	else
+	{
+		pos = best.pos;
+		String<Dna5> tmp_ins = infix(ref, best.pos, first.pos);
+		append(ins, tmp_ins);
+		append(ins, first.ins);
+	}
+
+	//process middle events
+	for (unsigned i = 1; i < length(rec.i1); ++i) // for all events between the first and last
+	{
+		DeltaEvent mid = dr.records[rec.i1[i]];
+		String<Dna5> tmp_ins = infix(ref, endPos(dr.records[rec.i1[i-1]]), mid.pos);
+		append(ins, tmp_ins);
+		append(ins, mid.ins);
+	}
+
+	// process last event
+	if (endPos(last) <= endPos(best))
+	{
+		String<Dna5> tmp_ins = infix(ref, endPos(last), endPos(best));
+		append(ins, tmp_ins);
+	}
+	else
+	{
+		del += (endPos(last) - endPos(best));
+	}
+
+	//determine new type
+	type = determineType(del, ins);
+
+	DeltaEvent new_e = DeltaEvent(pos, length(best.seqs), 0, type, ins, del);
+	new_e.seqs[0] = false; // revert initialization
+	new_e.seqs |= rec.i2; // update seqs
+
+	return new_e;
+}
+
+String<unsigned> mergeInteger(String<unsigned> & s1, String<unsigned> & s2)
+{
+	String<unsigned> s;
+	append(s, s1);
+	for (unsigned i = 0; i < length(s2); ++i)
+		if (!isIn(s, s2[i]))
+			appendValue(s, s2[i]);
+	return s;
+}
+
+bool isSubset(String<unsigned> subset, String<unsigned> set)
+{
+	for (unsigned i = 0; i < length(subset); ++i)
+		if (!isIn(set, subset[i]))
+			return false;
+	return true;
+}
+
+template <typename TRecordAsPair, typename TRecordsAsPairs>
+bool contains(TRecordsAsPairs rec_set, TRecordAsPair rec)
+{
+	for (unsigned j = 0; j < length(rec_set); ++j)
+		if((isSubset(rec.i1, rec_set[j].i1)) && (isSubset(rec_set[j].i1, rec.i1)) && (rec.i2 == rec_set[j].i2))
+			return true;
+	return false;
+}
+
+template<typename TSequence>
+int processDR(DependentRegion & dr, TSequence & ref)
+{
+	computeEventScores(dr);
+	bool better = dr.bestScoringDeltaEvent.i2 < 0;
+	int offset = 0;
+
+	while (better)
+	{
+		unsigned best_i = dr.bestScoringDeltaEvent.i1;
+		DeltaEvent & best = dr.records[best_i];
+		String<unsigned> dep_i = dr.dependencies[best_i];
+		int tmp_offset = length(best.ins) - best.del;
+
+		String<DeltaEvent> recs;
+		String<bool, Packed<> > unaffected_seqs;
+		resize(unaffected_seqs, length(best.seqs), true);
+		unaffected_seqs &= (~best.seqs);
+
+		// get tuple of events that have common sequences (two dependent events on one sequence)
+		typedef Pair<String<unsigned>, String<bool, Packed<> > > TPair_multiple;
+		String<TPair_multiple> new_recs;
+		String<TPair_multiple> tmp_recs;
+		// initialize
+		for (unsigned i1 = 0; i1 < length(dep_i); ++i1)
+		{
+			DeltaEvent e = dr.records[dep_i[i1]];
+			String<unsigned> event_indices;
+			appendValue(event_indices, dep_i[i1]);
+			TPair_multiple pair_m(event_indices, dr.records[dep_i[i1]].seqs);
+			appendValue(tmp_recs, pair_m);
+		}
+		unsigned l = length(tmp_recs);
+
+		// merge dependent events on the same sequence.
+		// result: list of events in 'new_recs' where sequences are now independent.
+		while(l > 0)
+		{
+			// create next level of multiple events by combining those that have sequences in common
+			String<TPair_multiple> new_tmp_recs;
+			for(unsigned i = 0; i < length(tmp_recs); ++i)
+			{
+				for (unsigned j = i+1; j < length(tmp_recs); ++j)
+				{
+					String<bool, Packed<> > multiple = tmp_recs[i].i2 & tmp_recs[j].i2;
+					if(!(testAllZeros(multiple)))
+					{
+						String<unsigned> event_indices = mergeInteger(tmp_recs[i].i1, tmp_recs[j].i1);
+						TPair_multiple pair_m(event_indices, multiple);
+						appendValue(new_tmp_recs, pair_m);
+					}
+				}
+			}
+
+			// remove possible duplicates
+			String<TPair_multiple> new_tmp_recs_without_duplicates;
+			for (unsigned i = 0; i < length(new_tmp_recs); ++i)
+			{
+				if (!(contains(new_tmp_recs_without_duplicates, new_tmp_recs[i])))
+					appendValue(new_tmp_recs_without_duplicates, new_tmp_recs[i]);
+			}
+
+			// update current level of events by removing sequence information
+			for(unsigned i = 0; i < length(new_tmp_recs_without_duplicates); ++i)
+			{
+				for(unsigned j = 0; j < length(tmp_recs); ++j)
+				{
+					if (isSubset(tmp_recs[j].i1, new_tmp_recs_without_duplicates[i].i1)) // if tmp_recs[j] is a subset of new_tmp_recs[i]
+					{
+						tmp_recs[j].i2 &= (~new_tmp_recs_without_duplicates[i].i2); // remove sequence information new_tmp_recs[i] from tmp_recs[j]
+					}
+				}
+			}
+
+			// transfer
+			for(unsigned i = 0; i < length(tmp_recs); ++i)
+				if(!(testAllZeros(tmp_recs[i].i2)))
+					appendValue(new_recs, tmp_recs[i]);
+
+			tmp_recs = new_tmp_recs_without_duplicates;
+			l = length(tmp_recs);
+		}
+
+		// now process events
+		for (unsigned i = 0; i < length(new_recs); ++i)
+		{
+			DeltaEvent e = dr.records[new_recs[i].i1[0]];
+			e.seqs = new_recs[i].i2;
+			if (length(new_recs[i].i1) == 1)
+			{
+				processSingleEvent(e, best, ref);
+			}
+			else
+			{
+				e = processMultipleEvents(new_recs[i], best, dr, ref);
+			}
+			appendValue(recs, e);
+			unaffected_seqs &= (~e.seqs);
+		}
+
+
+		// add independent records to recs
+		// apply offset to independent events after best
+		for (unsigned i = 0; i < length(dr.records); ++i)
+		{
+			if (!(isIn(dep_i, i)) && (i!=best_i))
+			{
+				DeltaEvent & ev = dr.records[i];
+				if (ev.pos >= endPos(best))
+					ev.pos += tmp_offset;
+				appendValue(recs, ev);
+			}
+		}
+
+		// now create new event (opposite of best) for all unaffected sequences
+		unsigned del = length(best.ins);
+		String<Dna5> ins = infix(ref, best.pos, endPos(best));
+		DeltaEventType type = determineType(del, ins);
+		DeltaEvent new_e = DeltaEvent(best.pos, length(best.seqs), 0, type, ins, del);
+		new_e.seqs = unaffected_seqs;
+		append(recs, new_e);
+
+		mergeIntoRef(best, ref);
+
+		//update dr and look for other events to merged into ref
+		dr.records = recs;
+		dr.bestScoringDeltaEvent.i1 = 0;
+		dr.bestScoringDeltaEvent.i2 = 0;
+
+		sort(dr.records, CompareByPosLessThan_());
+		updateDependencies(dr);
+		computeEventScores(dr);
+		better = dr.bestScoringDeltaEvent.i2 < 0;
+		offset += tmp_offset;
+	}
+
+	return offset;
+}
+
+
+
 bool isEqual(DeltaEvent & lhs, DeltaEvent & rhs)
 {
 	if (lhs.pos == rhs.pos)
-	{
 		if (lhs.type == rhs.type)
-		{
-			if (lhs.type == 0)
-				return lhs.snp == rhs.snp;
-			else if (lhs.type == 1)
-				return lhs.del == rhs.del;
-			else if (lhs.type == 2)
+			if (lhs.del == rhs.del)
 				return lhs.ins == rhs.ins;
-			else // lhs.type = 3
-				return lhs.sv == rhs.sv; // pair ?
-		}
-	}
 	return false;
 }
 
@@ -923,8 +688,8 @@ int updateDR(DependentRegion & dr, DeltaEvent & e, TPair & dep)
 	unsigned record_num = length(dr.records); // index in dependent region
 
 	// check which events are influenced by delta event e
-	String<unsigned> toDelete;
-	String<unsigned> toAdd;
+	String<unsigned> toDelete = "";
+	String<unsigned> toAdd = "";
 	for (unsigned d = 0; d < length(dep); ++d)
 	{
 		if (e.pos < dep[d].i2) // e and dep[d] are dependent of each other
@@ -944,71 +709,57 @@ int updateDR(DependentRegion & dr, DeltaEvent & e, TPair & dep)
 	return 0;
 }
 
-int clear(DependentRegion & dr)
-{
-	clear(dr.records);
-	clear(dr.scores);
-	clear(dr.dependencies);
-	Pair<unsigned, unsigned> pair(0,0);
-	dr.bestScoringDeltaEvent = pair;
-
-	return 0;
-}
-
 template<typename TDeltaEvents>
-unsigned getNextDR(DependentRegion & dr, String<unsigned> & recs_to_delete, TDeltaEvents & records, unsigned start)
+unsigned getNextDR(DependentRegion & dr, TDeltaEvents & records, unsigned start)
 {
 	SEQAN_ASSERT(start < length(records));
 	typedef Pair<unsigned, unsigned> TPair;
+	typedef String<bool, Packed<> > TPacked;
 
+	TPacked allZeros;
+	resize(allZeros, length(records[0].seqs), false);
 	String<TPair> dep;
 
 	//DeltaEvent & first = records[start];
 	// initialize first dependent region
 	appendValue(dr.records, records[start]);
-	String<unsigned> d; // no dependencies for first entry yet
+	String<unsigned> d = ""; // no dependencies for first entry yet
 	appendValue(dr.dependencies, d);
 
-	unsigned drb = getBorder(records[start]); // dependent Region Border
+	unsigned drb = endPos(records[start]); // dependent Region Border
 	TPair pair(0, drb);
 	appendValue(dep, pair);
 
 
 	// parse records from left to right
 	// look for merging possibilities and define dependent regions
-	//String<unsigned> recs_to_delete;
 	for (unsigned i = start+1; i < length(records); ++i)
 	{
 		DeltaEvent & e = records[i];
 
 		if (isEqual(e, records[i-1]))
 		{
-			// verodere sequence information und loesche e aus records
-			combineOR(dr.records[length(dr.records)-1].seqs, e.seqs);
-			appendValue(recs_to_delete, i);
+			dr.records[length(dr.records)-1].seqs |= e.seqs;
+			e.seqs &= allZeros;
 		}
-
 		else if (e.pos < drb) // e is inside dependent region dr
 		{
 			unsigned record_num = length(dr.records); // index in dependent region
 
 			updateDR(dr, e, dep);
 
-			unsigned b = getBorder(e);
+			unsigned b = endPos(e);
 			if (b > drb)
 				drb = b;
 			TPair pair(record_num, b);
 			appendValue(dep, pair);
 		}
-
 		else // end of dependent region
 		{
-			//deleteEntries(records, recs_to_delete);
-			return (i);
+			return (i); // next region starts with i
 		}
 	}
 
-	//deleteEntries(records, recs_to_delete);
 	return length(records);
 }
 
@@ -1019,50 +770,28 @@ unsigned getNextDR(DependentRegion & dr, String<unsigned> & recs_to_delete, TDel
 template<typename TDeltaEvents, typename TSequence>
 int processDeltaEventsOnReference(TDeltaEvents & records, TSequence & ref)
 {
-	String<unsigned> recs_to_delete;
+	String<DeltaEvent> recs;
 	sort(records, CompareByPosAndTypeLessThan_()); // sort by reference position(first) and type(second) and value(third)
-	for(unsigned i = 0; i < length(records); ++i)
-	{
-		std::cout << "records #" << i << " at " << records[i].pos << " seqs:";
-		for (unsigned j = 0; j < length(records[i].seqs); ++j)
-			std::cout << records[i].seqs[j];
-		std::cout << " type:" << records[i].type <<" \n";
-	}
 
 	unsigned start = 0;
 	unsigned end = length(records);
 	while(start < end)
 	{
-		String<unsigned> tmp_recs_to_delete;
 		DependentRegion dr;
-
-		unsigned new_start = getNextDR(dr, tmp_recs_to_delete, records, start);
-//		std::cout << "dependent region contains records:";
-//		for(unsigned i = start; i < new_start; ++i)
-//		{
-//			if (!(isIn(tmp_recs_to_delete, i)))
-//				std::cout << i << ",";
-//		}
-//		std::cout << "\n";
+		unsigned new_start = getNextDR(dr, records, start);
 		int offset = processDR(dr, ref); // inside here, no record is deleted
 
-		// update records from start to new_start todo:: why does it not work through references???
-		unsigned skip = 0;
-		for(unsigned i = start; i < new_start; ++i)
-		{
-			if (!(isIn(tmp_recs_to_delete, i)))
-				assignValue(records, i, dr.records[i-start-skip]);
-			else
-				++skip;
-		}
-		append(recs_to_delete, tmp_recs_to_delete);
+		// copy records from dr to new list because number of records varys now
+		for(unsigned i = 0; i < length(dr.records); ++i)
+			appendValue(recs, dr.records[i]);
 
 		if(offset!=0)
 			applyOffset(records, offset, new_start);
 		start = new_start;
 		end = length(records); // update because number of records might change!
 	}
-	deleteEntries(records, recs_to_delete);
+
+	records = recs;
 
 	return 0;
 }
