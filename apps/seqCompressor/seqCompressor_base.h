@@ -38,8 +38,8 @@
 #include <seqan/sequence.h>
 #include <seqan/align.h>
 #include <seqan/index.h>
-#include "laganAlignment_impl3.h"
-#include "processEvents2.h"
+#include "generateEvents.h"
+#include "processEvents.h"
 
 using namespace seqan;
 

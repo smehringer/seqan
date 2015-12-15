@@ -37,7 +37,7 @@
 #include <seqan/seq_io.h>
 #include <seqan/sequence.h>
 #include <seqan/arg_parse.h>
-#include "laganAlignment.h"
+#include "seqCompressor_base.h"
 
 // ==========================================================================
 // Classes
