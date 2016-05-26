@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -515,7 +515,7 @@ SEQAN_DEFINE_TEST(seqan_basic_type_metafunction_is_integral)
     SEQAN_ASSERT(b);
     b = IsInteger<long int>::Type::VALUE;
     SEQAN_ASSERT(b);
-    b = IsInteger<__int64>::Type::VALUE;
+    b = IsInteger<int64_t>::Type::VALUE;
     SEQAN_ASSERT(b);
     b = IsInteger<TestStruct1_>::Type::VALUE;
     SEQAN_ASSERT_NOT(b);

@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-namespace SEQAN_NAMESPACE_MAIN
+namespace seqan
 {
 
 /*!
@@ -2067,11 +2067,11 @@ namespace SEQAN_NAMESPACE_MAIN
     template < typename TTargetValue, typename TConfig, typename TValue, typename TExpand >
     inline void
     appendValue(String<TTargetValue, External<TConfig> > &me,
-                TValue SEQAN_FORWARD_CARG value,
+                TValue && value,
                 Tag<TExpand> expand)
     {
         resize(me, me.data_size + 1, expand);
-        back(me) = SEQAN_FORWARD(TValue, value);
+        back(me) = std::forward<TValue>(value);
     }
 
 //____________________________________________________________________________

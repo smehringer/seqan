@@ -148,39 +148,38 @@ namespace seqan {
 template <typename TSpec>
 struct Member<Match<TSpec>, ReadId>
 {
-    typedef __uint32    Type;
+    typedef uint32_t    Type;
 };
 
-template <typename TSpec>
-struct Member<Match<TSpec>, ContigId>
+template <typename TContigsSize, typename TContigsLen, typename TContigsSum>
+struct Member<Match<Limits<TContigsSize, TContigsLen, TContigsSum> >, ContigId>
 {
-    typedef __uint16    Type;
+    // To remove GCC packed-bitfield-compat warning. See MemberBits below.
+    typedef uint32_t  Type;
 };
 
-template <typename TContigsLen, typename TContigsSum>
-struct Member<Match<Limits<TContigsLen, TContigsSum> >, ContigSize>
+template <typename TContigsSize, typename TContigsLen, typename TContigsSum>
+struct Member<Match<Limits<TContigsSize, TContigsLen, TContigsSum> >, ContigSize>
 {
-    typedef TContigsSum  Type;
+    typedef TContigsLen  Type;
 };
 
 template <typename TSpec>
 struct Member<Match<TSpec>, ReadSize>
 {
-    typedef __uint16    Type;
+    typedef uint16_t    Type;
 };
 
 template <typename TSpec>
 struct Member<Match<TSpec>, Errors>
 {
-    typedef __uint32    Type;
+    typedef uint32_t    Type;
 };
-}
 
 // ----------------------------------------------------------------------------
 // Member Bits
 // ----------------------------------------------------------------------------
 
-namespace seqan {
 template <typename TObject, typename TSpec>
 struct MemberBits
 {
@@ -193,14 +192,28 @@ struct MemberBits<Match<TSpec>, ReadId>
     static const unsigned VALUE = 21;
 };
 
-template <typename TContigsLen>
-struct MemberBits<Match<Limits<TContigsLen, __uint8> >, ContigId>
+template <typename TContigsLen, typename TContigsSum>
+struct MemberBits<Match<Limits<uint8_t, TContigsLen, TContigsSum> >, ContigId>
 {
+    // To remove GCC packed-bitfield-compat warning.
     static const unsigned VALUE = 8;
 };
 
-template <typename TContigsLen>
-struct MemberBits<Match<Limits<TContigsLen, __uint64> >, ContigSize>
+template <typename TContigsLen, typename TContigsSum>
+struct MemberBits<Match<Limits<uint16_t, TContigsLen, TContigsSum> >, ContigId>
+{
+    // To remove GCC packed-bitfield-compat warning.
+    static const unsigned VALUE = 16;
+};
+
+template <typename TContigsLen, typename TContigsSum>
+struct MemberBits<Match<Limits<uint32_t, TContigsLen, TContigsSum> >, ContigId>
+{
+    static const unsigned VALUE = 30;
+};
+
+template <typename TContigsSize, typename TContigsSum>
+struct MemberBits<Match<Limits<TContigsSize, uint64_t, TContigsSum> >, ContigSize>
 {
     static const unsigned VALUE = 48;
 };
@@ -214,7 +227,7 @@ struct MemberBits<Match<TSpec>, ReadSize>
 template <typename TSpec>
 struct MemberBits<Match<TSpec>, Errors>
 {
-    static const unsigned VALUE = 5;
+    static const unsigned VALUE = 7;
 };
 }
 
@@ -499,14 +512,14 @@ inline float getErrorRate(Match<TSpec> const & me, TReadSeqs const & readSeqs)
 // ----------------------------------------------------------------------------
 
 template <typename TSpec>
-inline __uint64 getSortKey(Match<TSpec> const & me, ContigBegin)
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigBegin)
 {
     typedef Match<TSpec>    TMatch;
 
-    return ((__uint64)getMember(me, ContigId())      << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE)) |
-           ((__uint64)onReverseStrand(me)            << (MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE))     |
-           ((__uint64)getMember(me, ContigBegin())   <<  MemberBits<TMatch, Errors>::VALUE)                                              |
-           ((__uint64)getMember(me, Errors()));
+    return ((uint64_t)getMember(me, ContigId())      << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)            << (MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE))     |
+           ((uint64_t)getMember(me, ContigBegin())   <<  MemberBits<TMatch, Errors>::VALUE)                                              |
+           ((uint64_t)getMember(me, Errors()));
 }
 
 // ----------------------------------------------------------------------------
@@ -514,14 +527,14 @@ inline __uint64 getSortKey(Match<TSpec> const & me, ContigBegin)
 // ----------------------------------------------------------------------------
 
 template <typename TSpec>
-inline __uint64 getSortKey(Match<TSpec> const & me, ContigEnd)
+inline uint64_t getSortKey(Match<TSpec> const & me, ContigEnd)
 {
     typedef Match<TSpec>    TMatch;
 
-    return ((__uint64)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE)) |
-           ((__uint64)onReverseStrand(me)           << (MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE))     |
-           ((__uint64)getMember(me, ContigEnd())    <<  MemberBits<TMatch, Errors>::VALUE)                                              |
-           ((__uint64)getMember(me, Errors()));
+    return ((uint64_t)getMember(me, ContigId())     << (1 + MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE)) |
+           ((uint64_t)onReverseStrand(me)           << (MemberBits<TMatch, ContigSize>::VALUE + MemberBits<TMatch, Errors>::VALUE))     |
+           ((uint64_t)getMember(me, ContigEnd())    <<  MemberBits<TMatch, Errors>::VALUE)                                              |
+           ((uint64_t)getMember(me, Errors()));
 }
 
 // ============================================================================
@@ -802,7 +815,7 @@ findMatch(TMatches const & matches, TMatch const & match)
 // ----------------------------------------------------------------------------
 
 template <typename TMatches, typename TKey>
-inline void sortMatches(TMatches SEQAN_FORWARD_ARG matches)
+inline void sortMatches(TMatches && matches)
 {
     typedef typename Value<TMatches>::Type  TMatch;
 
@@ -823,9 +836,10 @@ findProperMates(TMatches const & mates, TMatch const & match,
     typedef typename Size<TReadSeqs>::Type          TReadId;
     typedef typename Value<TReadSeqs const>::Type   TReadSeq;
     typedef typename Size<TReadSeq>::Type           TReadSeqSize;
+    typedef typename MakeSigned<TReadSeqSize>::Type TReadDelta;
 
     TReadId mateId = getMateId(readSeqs, getMember(match, ReadId()));
-    TReadSeqSize mateLength = length(readSeqs[mateId]);
+    TReadDelta mateLength = length(readSeqs[mateId]);
 
     // Create lower and upper bound for the mate.
     TMatch mateLeq = match;
@@ -835,21 +849,29 @@ findProperMates(TMatches const & mates, TMatch const & match,
     mateLeq.errors = 0;
     mateGeq.errors = MemberLimits<TMatch, Errors>::VALUE;
 
+    TReadSeqSize deltaMinus = std::max(static_cast<TReadDelta>(0),
+                                       static_cast<TReadDelta>(mean) - static_cast<TReadDelta>(6 * stdDev) - mateLength);
+    TReadSeqSize deltaPlus = std::max(static_cast<TReadDelta>(0),
+                                      static_cast<TReadDelta>(mean) + static_cast<TReadDelta>(6 * stdDev) - mateLength);
+
     // --> ... mate
     if (onForwardStrand(match))
     {
-        addContigPosition(mateLeq, _max(0u, mean - 6 * stdDev - mateLength), contigSeqs);
-        addContigPosition(mateGeq, _max(0u, mean + 6 * stdDev - mateLength), contigSeqs);
+        addContigPosition(mateLeq, deltaMinus, contigSeqs);
+        addContigPosition(mateGeq, deltaPlus, contigSeqs);
     }
     // mate ... <--
     else
     {
-        subContigPosition(mateLeq, _max(0u, mean + 6 * stdDev - mateLength));
-        subContigPosition(mateGeq, _max(0u, mean - 6 * stdDev - mateLength));
+        subContigPosition(mateLeq, deltaPlus);
+        subContigPosition(mateGeq, deltaMinus);
     }
 
     TIter first = std::lower_bound(begin(mates, Standard()), end(mates, Standard()), mateLeq, MatchSorter<TMatch, ContigBegin>());
     TIter last = std::upper_bound(begin(mates, Standard()), end(mates, Standard()), mateGeq, MatchSorter<TMatch, ContigEnd>());
+
+    // Return empty infix if no proper mates were found.
+    if (first > last) return infix(mates, 0, 0);
 
     return infix(mates, position(first, mates), position(last, mates));
 }

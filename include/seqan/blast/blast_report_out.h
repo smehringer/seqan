@@ -247,6 +247,36 @@ _matrixName(Pam250 const & /**/)
     return "PAM250";
 }
 
+template <typename TCurTag>
+constexpr const char *
+_matrixNameTagDispatch(TagList<TCurTag, void> const &,
+                       AminoAcidScoreMatrixID const m)
+{
+    using TUndType = std::underlying_type_t<AminoAcidScoreMatrixID>;
+    return (Find<impl::score::MatrixTags, TCurTag>::VALUE == static_cast<TUndType>(m))
+            ? _matrixName(Score<int, ScoreMatrix<AminoAcid, TCurTag>>())
+            : "ERROR: Matrix name deduction failed, report this as a bug!";
+}
+
+template <typename TCurTag,
+          typename TRestList>
+constexpr const char *
+_matrixNameTagDispatch(TagList<TCurTag, TRestList> const &,
+                       AminoAcidScoreMatrixID const m)
+{
+    using TUndType = std::underlying_type_t<AminoAcidScoreMatrixID>;
+    return (Find<impl::score::MatrixTags, TCurTag>::VALUE == static_cast<TUndType>(m))
+            ? _matrixName(Score<int, ScoreMatrix<AminoAcid, TCurTag>>())
+            : _matrixNameTagDispatch(TRestList(), m);
+}
+
+template <typename TValue>
+constexpr const char *
+_matrixName(Score<TValue, ScoreMatrix<AminoAcid, ScoreSpecSelectable> > const & sc)
+{
+    return _matrixNameTagDispatch(impl::score::MatrixTags(), getScoreMatrixId(sc));
+}
+
 // ----------------------------------------------------------------------------
 // Function _writeStatsBlock
 // ----------------------------------------------------------------------------
@@ -449,7 +479,7 @@ _writeAlignmentBlock(TStream & stream,
     while (aPos < m.alignStats.alignmentLength)
     {
         // Query line
-        sprintf(buffer, "Query  %-*d  ", numberWidth, qPos + effQStart);
+        snprintf(buffer, 40, "Query  %-*d  ", numberWidth, qPos + effQStart);
         write(stream, buffer);
 
         TPos const end = std::min(static_cast<TPos>(aPos + windowSize), m.alignStats.alignmentLength);
@@ -459,7 +489,7 @@ _writeAlignmentBlock(TStream & stream,
                 qPos += qStep;
             write(stream, value(m.alignRow0, i));
         }
-        sprintf(buffer, "  %-*d", numberWidth, (qPos + effQStart) - qStepOne);
+        snprintf(buffer, 40, "  %-*d", numberWidth, (qPos + effQStart) - qStepOne);
         write(stream, buffer);
 
         // intermediate line
@@ -471,7 +501,7 @@ _writeAlignmentBlock(TStream & stream,
             _writeAlignmentBlockIntermediateChar(stream, context, value(m.alignRow0,i), value(m.alignRow1,i), BlastReport());
 
         // Subject line
-        sprintf(buffer, "\nSbjct  %-*d  ", numberWidth, sPos + effSStart);
+        snprintf(buffer, 40, "\nSbjct  %-*d  ", numberWidth, sPos + effSStart);
         write(stream, buffer);
 
         for (TPos i = aPos; i < end; ++i)
@@ -480,7 +510,7 @@ _writeAlignmentBlock(TStream & stream,
                 sPos += sStep;
             write(stream, value(m.alignRow1, i));
         }
-        sprintf(buffer, "  %-*d\n\n", numberWidth, (sPos + effSStart) - sStepOne);
+        snprintf(buffer, 40, "  %-*d\n\n", numberWidth, (sPos + effSStart) - sStepOne);
         write(stream, buffer);
 
         aPos = end;
@@ -790,10 +820,10 @@ writeMatrixName(TStream & stream, SimpleScore const & scheme)
 
 template <typename TStream, typename TScheme>
 inline void
-writeMatrixName(TStream & stream, TScheme const &)
+writeMatrixName(TStream & stream, TScheme const & scheme)
 {
     // see top of file
-    write(stream, _matrixName(TScheme()));
+    write(stream, _matrixName(scheme));
 }
 
 template <typename TStream,

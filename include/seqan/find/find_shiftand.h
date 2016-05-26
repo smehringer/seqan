@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 #ifndef SEQAN_HEADER_FIND_SHIFTAND_H
 #define SEQAN_HEADER_FIND_SHIFTAND_H
 
-namespace SEQAN_NAMESPACE_MAIN
+namespace seqan
 {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -80,8 +80,6 @@ public:
     Pattern()
     {}
 
-#ifdef SEQAN_CXX11_STANDARD
-
     // Custom c'tor setting a needle.
     template <typename TNeedle2>
     Pattern(TNeedle2 && ndl, SEQAN_CTOR_DISABLE_IF(IsSameType<typename std::remove_reference<TNeedle2>::type const &, Pattern const &>))
@@ -89,13 +87,6 @@ public:
         setHost(*this, std::forward<TNeedle2>(ndl));
         ignoreUnusedVariableWarning(dummy);
     }
-#else
-    template <typename TNeedle2>
-    Pattern(TNeedle2 const & ndl)
-    {
-        setHost(*this, ndl);
-    }
-#endif  // SEQAN_CXX11_STANDARD
 
 };
 
@@ -108,7 +99,6 @@ template <typename TNeedle>
 inline void
 _reinitPattern(Pattern<TNeedle, ShiftAnd> & me)
 {
-    SEQAN_CHECKPOINT
     typedef unsigned int TWord;
     typedef typename Value<TNeedle>::Type TValue;
 
@@ -156,7 +146,6 @@ template <typename TNeedle>
 inline void
 _patternInit (Pattern<TNeedle, ShiftAnd> & me)
 {
-SEQAN_CHECKPOINT
     clear(me.prefSufMatch);
     resize(me.prefSufMatch, me.blockCount, 0, Exact());
 }
@@ -167,7 +156,6 @@ template <typename TFinder, typename TNeedle>
 inline bool
 _findShiftAndSmallNeedle(TFinder & finder, Pattern<TNeedle, ShiftAnd> & me)
 {
-SEQAN_CHECKPOINT
     typedef typename Value<TNeedle>::Type TValue;
     typedef unsigned int TWord;
     TWord compare = (TWord)1 << (me.needleLength - 1);
@@ -190,7 +178,6 @@ template <typename TFinder, typename TNeedle>
 inline bool
 _findShiftAndLargeNeedle(TFinder & finder, Pattern<TNeedle, ShiftAnd> & me)
 {
-SEQAN_CHECKPOINT
     typedef typename Value<TNeedle>::Type TValue;
     typedef unsigned int TWord;
 
@@ -232,7 +219,6 @@ SEQAN_CHECKPOINT
 
 template <typename TFinder, typename TNeedle>
 inline bool find(TFinder & finder, Pattern<TNeedle, ShiftAnd> & me) {
-    SEQAN_CHECKPOINT
 
     if (empty(finder)) {
         _patternInit(me);
@@ -248,6 +234,6 @@ inline bool find(TFinder & finder, Pattern<TNeedle, ShiftAnd> & me) {
         return _findShiftAndLargeNeedle(finder, me);
 }
 
-}// namespace SEQAN_NAMESPACE_MAIN
+}// namespace seqan
 
 #endif //#ifndef SEQAN_HEADER_FIND_SHIFTAND_H

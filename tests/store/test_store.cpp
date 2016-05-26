@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,6 @@
 // Tests for the SeqAn module store.
 // ==========================================================================
 
-#define SEQAN_ENABLE_CHECKPOINTS 0
-
 #include <seqan/basic.h>
 #include "test_store_io.h"
 
@@ -43,6 +41,7 @@ SEQAN_BEGIN_TESTSUITE(test_store)
 {
     // the UCSC knownGene format
     SEQAN_CALL_TEST(test_store_io_read_ucsc_known_genes);
+    SEQAN_CALL_TEST(test_store_io_read_ucsc_known_genes_and_isoforms);
     SEQAN_CALL_TEST(test_store_io_write_ucsc_known_genes);
 
     // the gff format

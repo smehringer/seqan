@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 #ifndef SEQAN_HEADER_FIND_SETHORSPOOL_H
 #define SEQAN_HEADER_FIND_SETHORSPOOL_H
 
-namespace SEQAN_NAMESPACE_MAIN
+namespace seqan
 {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,6 @@ public:
     Pattern() {
     }
 
-#ifdef SEQAN_CXX11_STANDARD
     template <typename TNeedle2>
     Pattern(TNeedle2 && ndl,
             SEQAN_CTOR_DISABLE_IF(IsSameType<typename std::remove_reference<TNeedle2>::type const &, Pattern const &>))
@@ -100,13 +99,6 @@ public:
         setHost(*this, std::forward<TNeedle2>(ndl));
         ignoreUnusedVariableWarning(dummy);
     }
-#else
-    template <typename TNeedle2>
-    Pattern(TNeedle2 const & ndl)
-    {
-        setHost(*this, ndl);
-    }
-#endif  // SEQAN_CXX11_STANDARD
 
 //____________________________________________________________________________
 };
@@ -118,7 +110,6 @@ public:
 template <typename TNeedle>
 void _reinitPattern(Pattern<TNeedle, SetHorspool> & me)
 {
-    SEQAN_CHECKPOINT
     typedef typename Value<TNeedle>::Type TKeyword;
     typedef typename Size<TKeyword>::Type TSize;
     typedef typename Value<TKeyword>::Type TAlphabet;
@@ -174,7 +165,6 @@ void _reinitPattern(Pattern<TNeedle, SetHorspool> & me)
 template <typename TNeedle>
 inline void _patternInit (Pattern<TNeedle, SetHorspool> & me)
 {
-SEQAN_CHECKPOINT
     clear(me.data_endPositions);
     me.data_keywordIndex = 0;
     me.data_lastState = getRoot(me.data_reverseTrie);
@@ -193,7 +183,6 @@ position(Pattern<TNeedle, SetHorspool> & me)
 
 template <typename TFinder, typename TNeedle>
 inline bool find(TFinder & finder, Pattern<TNeedle, SetHorspool> & me) {
-    SEQAN_CHECKPOINT
     typedef typename Value<TNeedle>::Type TKeyword;
     typedef typename Size<TKeyword>::Type TSize;
     typedef typename Value<TKeyword>::Type TAlphabet;
@@ -253,7 +242,7 @@ inline bool find(TFinder & finder, Pattern<TNeedle, SetHorspool> & me) {
             me.data_lastState = current;
             finder -= me.data_needleLength;
             _setFinderLength(finder, me.data_needleLength+1);
-            _setFinderEnd(finder, position(finder)+length(finder));            
+            _setFinderEnd(finder, position(finder)+length(finder));
             return true;
         }
         oldMatch = false;
@@ -265,6 +254,6 @@ inline bool find(TFinder & finder, Pattern<TNeedle, SetHorspool> & me) {
     return false;
 }
 
-}// namespace SEQAN_NAMESPACE_MAIN
+}// namespace seqan
 
 #endif //#ifndef SEQAN_HEADER_FIND_SETHORSPOOL_H

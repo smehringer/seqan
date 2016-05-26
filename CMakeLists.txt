@@ -6,14 +6,14 @@
 # Main CMakeLists.txt file.
 # ===========================================================================
 
-project (seqan)
+project (seqan CXX)
 
 # ===========================================================================
-# We require CMake 2.8.2.  Since it is available in the currently stable
+# We require CMake 3.0.0. Since it is available in the currently stable
 # Debian, it should be available everywhere else, too.
 # ===========================================================================
 
-cmake_minimum_required (VERSION 2.8.2)
+cmake_minimum_required (VERSION 3.0.0)
 
 # ===========================================================================
 # Warn People About the Perils Of In-Source Builds
@@ -73,11 +73,9 @@ set (SEQAN_CTD_EXECUTABLES CACHE INTERNAL "Global list of executables for workfl
 # Build System Configuration Variables
 # ===========================================================================
 
-# Setting SEQAN_ENABLE_CUDA to ON through the command line or CMakeCache.txt
-# enables CUDA, provided the CUDA toolkit is found.
-option (SEQAN_ENABLE_CUDA
-        "Enable CUDA, if the toolkit is available."
-	OFF)
+option (SEQAN_STATIC_APPS "Build static apps." OFF)
+option (SEQAN_ARCH_SSE4 "Build SSE optimized binaries." OFF)
+option (SEQAN_ARCH_NATIVE "Build natively optimized binaries." OFF)
 
 # ===========================================================================
 # Setup Modules and Find Packages.
@@ -110,6 +108,7 @@ set (SEQAN_USE_SEQAN_BUILD_SYSTEM TRUE CACHE INTERNAL "Use SeqAn build system." 
 #set (SEQAN_PREFIX_SHARE .)
 include (SeqAnBuildSystem)
 set (SEQAN_ROOT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Root source directory." FORCE)
+seqan_get_version ()
 seqan_build_system_init ()
 seqan_get_repository_info ()
 
@@ -117,28 +116,35 @@ seqan_get_repository_info ()
 # Include Subdirectories
 # ===========================================================================
 
-# Tests are only built when building in DEVELOP mode.
+# Tests, demos and manual are only built when building in DEVELOP mode.
 if ("${SEQAN_BUILD_SYSTEM}" STREQUAL "DEVELOP")
     message (STATUS "Configuring tests")
     add_subdirectory (tests)
-endif ()
 
-# Demos are required when doing a whole SeqAn release (copy demos) or when
-# developing (build demos).
-if (("${SEQAN_BUILD_SYSTEM}" STREQUAL "SEQAN_RELEASE") OR
-    ("${SEQAN_BUILD_SYSTEM}" STREQUAL "DEVELOP"))
     message (STATUS "Configuring demos")
     add_subdirectory (demos)
+
+    message (STATUS "Configuring manual")
+    add_subdirectory (manual)
 endif ()
 
-message (STATUS "Configuring apps")
-add_subdirectory (apps)
-message (STATUS "Configuring dox")
-add_subdirectory (dox)
-message (STATUS "Configuring manual")
-add_subdirectory (manual)
-message (STATUS "Configuring util/py_lib")
-add_subdirectory (util/py_lib)
+if ((("${SEQAN_BUILD_SYSTEM}" STREQUAL "DEVELOP") OR
+     ("${SEQAN_BUILD_SYSTEM}" STREQUAL "SEQAN_RELEASE_LIBRARY")) AND
+     (NOT SEQAN_NO_DOX))
+
+    message (STATUS "Configuring dox")
+    add_subdirectory (dox)
+
+    if ("${SEQAN_BUILD_SYSTEM}" STREQUAL "DEVELOP")
+        message (STATUS "Configuring util/py_lib")
+        add_subdirectory (util/py_lib)
+    endif ()
+endif ()
+
+if (NOT "${SEQAN_BUILD_SYSTEM}" STREQUAL "SEQAN_RELEASE_LIBRARY")
+    message (STATUS "Configuring apps")
+    add_subdirectory (apps)
+endif ()
 
 # ===========================================================================
 # Register Libraries (for GUI project generators)

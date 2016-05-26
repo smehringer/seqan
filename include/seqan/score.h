@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,7 @@
 #include <seqan/score/score_matrix.h>
 #include <seqan/score/score_matrix_io.h>
 #include <seqan/score/score_matrix_data.h>
+#include <seqan/score/score_matrix_dyn.h>
 #include <seqan/score/score_simple.h>
 
 #endif  // SEQAN_SH_

@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // Copyright (c) 2013 NVIDIA Corporation
 // All rights reserved.
 //
@@ -64,10 +64,8 @@
 #include <numeric>
 
 #include <seqan/platform.h>
-#ifdef SEQAN_CXX11_STANDARD
 #include <forward_list>
 #include <array>
-#endif
 
 // ----------------------------------------------------------------------------
 // Basic
@@ -76,15 +74,6 @@
 #include <seqan/basic.h>
 #include <seqan/misc/bit_twiddling_functors.h>
 #include <seqan/misc/bit_twiddling.h>
-
-// ----------------------------------------------------------------------------
-// Thrust prerequisites.
-// ----------------------------------------------------------------------------
-
-#ifdef PLATFORM_CUDA
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-#endif
 
 // ===========================================================================
 // Forwards.
@@ -127,6 +116,7 @@
 // ===========================================================================
 
 #include <seqan/sequence/container_view.h>
+#include <seqan/sequence/container_view_zip.h>
 
 // ===========================================================================
 // Adaptions.
@@ -134,9 +124,6 @@
 
 #include <seqan/sequence/adapt_stl_container.h>
 #include <seqan/sequence/adapt_array_pointer.h>
-#ifdef PLATFORM_CUDA
-#include <seqan/sequence/adapt_thrust_vector.h>
-#endif
 
 // ===========================================================================
 // StringSets.
@@ -146,9 +133,6 @@
 #include <seqan/sequence/sequence_concatenator.h>
 #include <seqan/sequence/string_set_base.h>
 #include <seqan/sequence/string_set_view.h>
-#ifdef PLATFORM_CUDA
-#include <seqan/sequence/string_set_device.h>
-#endif
 #include <seqan/sequence/string_set_concat_direct.h>
 #include <seqan/sequence/string_set_dependent_tight.h>
 #include <seqan/sequence/string_set_dependent_generous.h>

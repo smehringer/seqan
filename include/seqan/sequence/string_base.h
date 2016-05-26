@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -421,7 +421,7 @@ shareResources(TValue const & obj1,
 // ----------------------------------------------------------------------------
 
 template <typename TValue, typename TSpec, typename TPos>
-SEQAN_HOST_DEVICE inline typename Reference< String<TValue, TSpec> >::Type
+inline typename Reference< String<TValue, TSpec> >::Type
 value(String<TValue, TSpec> & me,
       TPos const & pos)
 {
@@ -433,7 +433,7 @@ value(String<TValue, TSpec> & me,
 }
 
 template <typename TValue, typename TSpec, typename TPos>
-SEQAN_HOST_DEVICE inline typename Reference< String<TValue, TSpec> const >::Type
+inline typename Reference< String<TValue, TSpec> const >::Type
 value(String<TValue, TSpec> const & me,
       TPos const & pos)
 {
@@ -449,7 +449,7 @@ value(String<TValue, TSpec> const & me,
 // ----------------------------------------------------------------------------
 
 template <typename TValue, typename TSpec>
-SEQAN_HOST_DEVICE inline typename Size< String<TValue, TSpec> const>::Type
+inline typename Size< String<TValue, TSpec> const>::Type
 length(String<TValue, TSpec> const & me)
 {
     return end(me, Standard()) - begin(me, Standard());
@@ -460,7 +460,7 @@ length(String<TValue, TSpec> const & me)
 // ----------------------------------------------------------------------------
 
 template <typename TValue, typename TSpec>
-SEQAN_HOST_DEVICE inline bool
+inline bool
 empty(String<TValue, TSpec> const & me)
 {
     return end(me, Standard()) == begin(me, Standard());
@@ -1314,7 +1314,7 @@ struct AppendValueToString_
     template <typename T, typename TValue>
     static inline void
     appendValue_(T & me,
-                 TValue SEQAN_FORWARD_CARG _value)
+                 TValue && _value)
     {
         typedef typename Value<T>::Type TTargetValue;
         typedef typename Size<T>::Type TSize;
@@ -1322,19 +1322,19 @@ struct AppendValueToString_
         TSize me_length = length(me);
         if (capacity(me) <= me_length)
         {
-            TTargetValue temp_copy(SEQAN_FORWARD(TValue, _value)); //temp copy because resize could invalidate _value
+            TTargetValue temp_copy(std::forward<TValue>(_value)); //temp copy because resize could invalidate _value
             // TODO(holtgrew): The resize() function will default construct the last element. This is slow. Get rid of this.
             TSize new_length = reserve(me, me_length + 1, TExpand());
             if (me_length < new_length)
             {
                 // *(begin(me) + me_length) = temp_copy;
-                valueConstruct(begin(me, Standard()) + me_length, SEQAN_FORWARD(TTargetValue, temp_copy)); //??? this should be valueMoveConstruct
+                valueConstruct(begin(me, Standard()) + me_length, std::forward<TTargetValue>(temp_copy)); //??? this should be valueMoveConstruct
                 _setLength(me, me_length + 1);
             }
         }
         else
         {
-            valueConstruct(begin(me, Standard()) + me_length, SEQAN_FORWARD(TValue, _value));
+            valueConstruct(begin(me, Standard()) + me_length, std::forward<TValue>(_value));
             _setLength(me, me_length + 1);
         }
     }
@@ -1343,10 +1343,10 @@ struct AppendValueToString_
 template <typename TTargetValue, typename TTargetSpec, typename TValue, typename TExpand>
 inline void
 appendValue(String<TTargetValue, TTargetSpec> & me,
-            TValue SEQAN_FORWARD_CARG _value,
+            TValue && _value,
             Tag<TExpand>)
 {
-    AppendValueToString_<Tag<TExpand> >::appendValue_(me, SEQAN_FORWARD(TValue, _value));
+    AppendValueToString_<Tag<TExpand> >::appendValue_(me, std::forward<TValue>(_value));
 }
 
 // ----------------------------------------------------------------------------
@@ -1356,11 +1356,11 @@ appendValue(String<TTargetValue, TTargetSpec> & me,
 template <typename TTargetValue, typename TTargetSpec, typename TValue, typename TExpand>
 inline void
 appendValue(String<TTargetValue, TTargetSpec> & me,
-            TValue SEQAN_FORWARD_CARG _value,
+            TValue && _value,
             Tag<TExpand> const & expandTag,
             Serial)
 {
-    appendValue(me, SEQAN_FORWARD(TValue, _value), expandTag);
+    appendValue(me, std::forward<TValue>(_value), expandTag);
 }
 
 //////////////////////////////////////////////////////////////////////////////

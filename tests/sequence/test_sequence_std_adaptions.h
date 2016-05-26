@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -745,7 +745,6 @@ SEQAN_DEFINE_TEST(test_sequence_adaptions_sequence_interface_std_list)
     }
 }
 
-#ifdef SEQAN_CXX11_STANDARD
 // Tests the return types and existence of the metafunctions for STL arrays.
 SEQAN_DEFINE_TEST(test_sequence_adaptions_metafunctions_std_array)
 {
@@ -884,7 +883,5 @@ SEQAN_DEFINE_TEST(test_sequence_adaptions_sequence_interface_std_array)
 
     // TODO(holtgrew): Anything else missing? Probably...
 }
-
-#endif // def SEQAN_CXX11_STANDARD
 
 #endif  // TEST_SEQUENCE_TEST_SEQUENCE_STD_ADAPTIONS_H_

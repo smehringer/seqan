@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,7 @@
 #ifndef SEQAN_HEADER_FIND_BOM_H
 #define SEQAN_HEADER_FIND_BOM_H
 
-namespace SEQAN_NAMESPACE_MAIN
+namespace seqan
 {
 
 //////////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,6 @@ public:
     Pattern() {
     }
 
-#ifdef SEQAN_CXX11_STANDARD
     template <typename TNeedle2>
     Pattern(TNeedle2 && ndl,
             SEQAN_CTOR_DISABLE_IF(IsSameType<typename std::remove_reference<TNeedle2>::type const &, Pattern const &>))
@@ -127,14 +126,6 @@ public:
         ignoreUnusedVariableWarning(dummy);
         setHost(*this, std::forward<TNeedle2>(ndl));
     }
-#else
-    template <typename TNeedle2>
-    Pattern(TNeedle2 const & ndl)
-    {
-SEQAN_CHECKPOINT
-        setHost(*this, ndl);
-    }
-#endif
 //____________________________________________________________________________
 };
 
@@ -147,7 +138,6 @@ template <typename TNeedle>
 inline void
 _reinitPattern(Pattern<TNeedle, Bfam<Oracle> > & me)
 {
-    SEQAN_CHECKPOINT
     me.needleLength = length(needle(me));
     clear(me.automaton);
     createOracleOnReverse(me.automaton,needle(me));
@@ -158,7 +148,6 @@ template <typename TNeedle>
 inline void
 _reinitPattern(Pattern<TNeedle, Bfam<Trie> > & me)
 {
-    SEQAN_CHECKPOINT;
     typedef typename Position<TNeedle>::Type TPosition;
     me.needleLength = length(needle(me));
     clear(me.automaton);
@@ -177,7 +166,6 @@ _reinitPattern(Pattern<TNeedle, Bfam<Trie> > & me)
 template <typename TNeedle, typename TSpec>
 inline void _patternInit (Pattern<TNeedle, Bfam<TSpec> > & me)
 {
-SEQAN_CHECKPOINT
     me.step = 0;
 }
 
@@ -222,6 +210,6 @@ find(TFinder & finder, Pattern<TNeedle, Bfam<TSpec> > & me)
     return false;
 }
 
-}// namespace SEQAN_NAMESPACE_MAIN
+}// namespace seqan
 
 #endif //#ifndef SEQAN_HEADER_FIND_SHIFTAND_H

@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2014, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -218,14 +218,15 @@ SEQAN_DEFINE_TEST(test_reduced_aminoacid_murphy10_modview_fmindex)
     indexRequire(index, FibreSALF());         // instantiate
 
     // actual search is only done if lambdas are available
-#if defined(SEQAN_CXX11_STANDARD) && (!_MSC_VER || _MSC_VER >= 1700)
     typedef typename Iterator<Index<TModSet, TFMIndex>, TopDown<>>::Type TIndexIt;
 
     std::vector<std::pair<uint64_t, uint64_t>> hits;
     auto callback = [&] (TIndexIt & indexIt, int)
     {
-        for (auto subjOcc : getOccurrences(indexIt))
+        auto const & occurrences = getOccurrences(indexIt);
+        for (auto it = begin(occurrences), itEnd = end(occurrences); it != itEnd; ++it)
         {
+            auto subjOcc = *it;
             // reverse positions again
             setSeqOffset(subjOcc,
                          length(origSet[getSeqNo(subjOcc)])
@@ -245,7 +246,6 @@ SEQAN_DEFINE_TEST(test_reduced_aminoacid_murphy10_modview_fmindex)
     {
         SEQAN_ASSERT_EQ(std::get<0>(hits[1+i]), 1u); SEQAN_ASSERT_EQ(std::get<1>(hits[1+i]), 12u +i);
     }
-#endif
 }
 
 #endif  // SEQAN_TESTS_REDUCED_ALPHABET_H_

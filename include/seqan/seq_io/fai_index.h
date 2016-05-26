@@ -1,7 +1,7 @@
 // ==========================================================================
 //                 SeqAn - The Library for Sequence Analysis
 // ==========================================================================
-// Copyright (c) 2006-2015, Knut Reinert, FU Berlin
+// Copyright (c) 2006-2016, Knut Reinert, FU Berlin
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,9 +67,9 @@ public:
     // Name of the sequences.
     CharString name;
     // Length of the sequence.
-    __uint64 sequenceLength;
+    uint64_t sequenceLength;
     // Offset in the file.
-    __uint64 offset;
+    uint64_t offset;
     // Number of sequence characters per line.
     unsigned lineLength;
     // Number of bytes per line, including newline character(s).
@@ -173,6 +173,8 @@ inline void clear(FaiIndex & index)
     clear(index.indexEntryStore);
     clear(index.seqNameStore);
     clear(index.seqNameStoreCache);
+    index.file.clear();
+    index.file.seekg(0, index.file.beg);
 }
 
 // ----------------------------------------------------------------------------
@@ -226,16 +228,16 @@ inline bool getIdByName(TId & rID, FaiIndex const & index, TName const & name)
  * @fn FaiIndex#sequenceLength
  * @brief Return length of the sequence with the given id in the FaiIndex.
  *
- * @signature __uint64 sequenceLength(faiIndex, rID);
+ * @signature uint64_t sequenceLength(faiIndex, rID);
  *
  * @param[in] faiIndex The FaiIndex to query.
  * @param[in] rID    The id of the sequence to get the length of.
  *
- * @return __uint64 The length of the sequence with index rID in faiIndex.
+ * @return uint64_t The length of the sequence with index rID in faiIndex.
  */
 
 template <typename TSeqId>
-inline __uint64 sequenceLength(FaiIndex const & index, TSeqId rID)
+inline uint64_t sequenceLength(FaiIndex const & index, TSeqId rID)
 {
     return index.indexEntryStore[rID].sequenceLength;
 }
@@ -243,7 +245,7 @@ inline __uint64 sequenceLength(FaiIndex const & index, TSeqId rID)
 // TODO(holtgrew): Wrapper and template only here because sequenceLength in string_set_base.h is weird.
 
 template <typename TSeqId>
-inline __uint64 sequenceLength(FaiIndex & index, TSeqId rID)
+inline uint64_t sequenceLength(FaiIndex & index, TSeqId rID)
 {
     return index.indexEntryStore[rID].sequenceLength;
 }
@@ -277,14 +279,14 @@ inline CharString const & sequenceName(FaiIndex const & index, unsigned rID)
  * @fn FaiIndex#numSeqs
  * @brief Return the number of sequences known to a FaiIndex.
  *
- * @signature __uint64 numSeqs(faiIndex);
+ * @signature uint64_t numSeqs(faiIndex);
  *
  * @param[in] faiIndex The FaiIndex to query.
  *
- * @return __uint64 The number of sequences in the index.
+ * @return uint64_t The number of sequences in the index.
  */
 
-inline __uint64 numSeqs(FaiIndex const & index)
+inline uint64_t numSeqs(FaiIndex const & index)
 {
     return length(index.indexEntryStore);
 }
@@ -349,7 +351,7 @@ inline void readRegion(String<TValue, TSpec> & str,
 //    typedef typename Iterator<String<char, MMap<> > const, Standard>::Type TSourceIter;
 //    typedef typename Iterator<String<TValue, TSpec>, Standard>::Type TTargetIter;
 //    TSourceIter itSource = begin(index.mmapString, Standard());
-//    __uint64 offset = index.indexEntryStore[rID].offset;
+//    uint64_t offset = index.indexEntryStore[rID].offset;
 //    // First, compute offset of the completely filled lines.
 //    unsigned numLines = beginPos / index.indexEntryStore[rID].lineLength;
 //    unsigned numBytes = numLines * index.indexEntryStore[rID].overallLineLength;

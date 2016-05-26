@@ -270,8 +270,8 @@ _readCommentLinesImpl(BlastRecord<TMatch> & r,
 
     do
     {
-        if (std::regex_search(begin(context._lineBuffer, Standard()),
-                              end(context._lineBuffer, Standard()),
+        if (std::regex_search(std::begin(context._lineBuffer),
+                              std::end(context._lineBuffer),
                               std::regex("^# T?BLAST")))
         {
             // last line of file
@@ -289,8 +289,8 @@ _readCommentLinesImpl(BlastRecord<TMatch> & r,
                                                                             ' ')
                                                                   - begin(context.versionString, Standard())));
 
-                context.legacyFormat = !std::regex_search(begin(context.versionString, Standard()),
-                                                          end(context.versionString, Standard()),
+                context.legacyFormat = !std::regex_search(std::begin(context.versionString),
+                                                          std::end(context.versionString),
                                                           std::regex("\\d\\.\\d\\.\\d{1,2}\\+"));
             }
         }
@@ -312,9 +312,9 @@ _readCommentLinesImpl(BlastRecord<TMatch> & r,
             // make sure target is big enough
             resize(context._stringBuffer, length(context._lineBuffer) - 10);
             // use escape character as placeholder for replacement since strSplit only handles single characters
-            std::regex_replace(begin(context._stringBuffer, Standard()),
-                               begin(context._lineBuffer, Standard()) + 10, // skip "# Fields:"
-                               end(context._lineBuffer, Standard()),
+            std::regex_replace(std::begin(context._stringBuffer),
+                               std::begin(context._lineBuffer) + 10, // skip "# Fields:"
+                               std::end(context._lineBuffer),
                                std::regex(", "),
                                "\x7F");
             // shrink back down to actual size (replacing two letters with one makes string shorter!)
@@ -367,7 +367,7 @@ _readCommentLinesImpl(BlastRecord<TMatch> & r,
                     for (unsigned i = 2; (i < length(context._lineBuffer) && isdigit(context._lineBuffer[i])); ++i)
                         appendValue(context._stringBuffer, context._lineBuffer[i], Generous());
 
-                    __uint64 hits = lexicalCast<__uint64>(context._stringBuffer);
+                    uint64_t hits = lexicalCast<uint64_t>(context._stringBuffer);
 
                     if (hits)
                     {
@@ -400,8 +400,8 @@ _readCommentLinesImpl(BlastRecord<TMatch> & r,
         _goNextLine(context, iter, BlastTabular());
 
     } while (startsWith(context._lineBuffer, "#") &&                   // still on comments
-             !std::regex_search(begin(context._lineBuffer, Standard()),// start of next record
-                                end(context._lineBuffer, Standard()),
+             !std::regex_search(std::begin(context._lineBuffer),// start of next record
+                                std::end(context._lineBuffer),
                                 std::regex("^# T?BLAST")));
 
     if (context.blastProgram == BlastProgram::UNKNOWN)
@@ -959,7 +959,7 @@ readFooter(BlastIOContext<TScore, p, h> & context,
         it += 18; // skip "BLAST processed "
         readUntil(context._stringBuffer, it,  IsBlank());
 
-        __uint64 numRecords = lexicalCast<__uint64>(context._stringBuffer);
+        uint64_t numRecords = lexicalCast<uint64_t>(context._stringBuffer);
 
         clear(context.conformancyErrors);
         if (context._numberOfRecords < numRecords)
