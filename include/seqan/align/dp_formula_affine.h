@@ -178,37 +178,37 @@ _doComputeScore(DPCell_<TScoreValue, AffineGaps> & activeCell,
     typedef typename TraceBitMap_<TScoreValue>::Type TTraceValue;
 
     // Compute horizontal direction.
+    // this needs to be computed first because _horizontalScoreOfCell returns *activeColIterator in a SparseMatrix
     TScoreValue sv = _horizontalScoreOfCell(previousHorizontal) +
                      scoreGapExtendHorizontal(scoringScheme, seqHVal, seqVVal);
-    TTraceValue tv = _assignScoreHV(_horizontalScoreOfCell(activeCell),
-                                    static_cast<TScoreValue>(_scoreOfCell(previousHorizontal) + scoreGapOpenHorizontal(scoringScheme, seqHVal, seqVVal)),
-                                    +TraceBitMap_<TScoreValue>::HORIZONTAL_OPEN,
-                                    typename _activate<std::decay_t<TRecursionDirection>, DPHorizontal>::Type());
-    //TODO:: can former tv computation be put directly below?
-    tv =  _dpMax(_horizontalScoreOfCell(activeCell),
-                 sv,
-                 tv,
-                 +TraceBitMap_<TScoreValue>::HORIZONTAL,
-                 TTracebackConfig(),
-                 typename _activate<std::decay_t<TRecursionDirection>, DPHorizontal>::Type());
+    TTraceValue tv = _dpMax(_horizontalScoreOfCell(activeCell),
+                            sv,
+                            _assignScoreHV(_horizontalScoreOfCell(activeCell),
+                                           static_cast<TScoreValue>(_scoreOfCell(previousHorizontal) +
+                                                                    scoreGapOpenHorizontal(scoringScheme, seqHVal, seqVVal)),
+                                           +TraceBitMap_<TScoreValue>::HORIZONTAL_OPEN,
+                                           typename _activate<std::decay_t<TRecursionDirection>, DPHorizontal>::Type()),
+                            +TraceBitMap_<TScoreValue>::HORIZONTAL,
+                            TTracebackConfig(),
+                            typename _activate<std::decay_t<TRecursionDirection>, DPHorizontal>::Type());
 
     // Compute vertical direction.
-    TTraceValue tv2 = _assignScoreHV(_verticalScoreOfCell(activeCell),
-                                    static_cast<TScoreValue>(_scoreOfCell(previousVertical) + scoreGapOpenVertical(scoringScheme, seqHVal, seqVVal)),
-                                    +TraceBitMap_<TScoreValue>::VERTICAL_OPEN,
-                                    typename _activate<std::decay_t<TRecursionDirection>, DPVertical>::Type());
-
     tv |= _dpMax(_verticalScoreOfCell(activeCell),
                  static_cast<TScoreValue>(_verticalScoreOfCell(previousVertical) +
                                           scoreGapExtendVertical(scoringScheme, seqHVal, seqVVal)),
-                 tv2,
+                 _assignScoreHV(_verticalScoreOfCell(activeCell),
+                                static_cast<TScoreValue>(_scoreOfCell(previousVertical) +
+                                                         scoreGapOpenVertical(scoringScheme, seqHVal, seqVVal)),
+                                +TraceBitMap_<TScoreValue>::VERTICAL_OPEN,
+                                typename _activate<std::decay_t<TRecursionDirection>, DPVertical>::Type()),
                  +TraceBitMap_<TScoreValue>::VERTICAL,
                  TTracebackConfig(),
                  typename _activate<std::decay_t<TRecursionDirection>, DPVertical>::Type());
 
-    // Get max from horiztonal and/or vertical direction and compare with diagonal direction.
+    // Get max from horiztonal and/or vertical direction
     TTraceValue tvMax = _internalComputeScore(activeCell, TTracebackConfig());
-    
+
+    // and compare with diagonal direction.
     return _dpMax(_scoreOfCell(activeCell),
                   static_cast<TScoreValue>(_scoreOfCell(previousDiagonal) +
                                            score(scoringScheme, seqHVal, seqVVal)),
