@@ -61,6 +61,7 @@
 #ifndef INCLUDE_SEQAN_BAM_IO_BAM_INDEX_BAI_H_
 #define INCLUDE_SEQAN_BAM_IO_BAM_INDEX_BAI_H_
 
+
 namespace seqan {
 
 // ============================================================================
@@ -258,7 +259,7 @@ viewRecords(TContainer & resultContainer,
     // We want to mimic samtools view. Since SAM/BAM files are one based we expect
     // the given region to be also one-based (To be consistent with samtools).
     // Since SeqAn works 0-based we need to subtract 1.
-    SEQAN_ASSERT_GEQ_MSG(regionStart, 1, "Expect 1-based region interval which excludes 0 as a start pos.");
+    SEQAN_ASSERT_GEQ_MSG(regionStart, 1u, "Expect 1-based region interval which excludes 0 as a start pos.");
     --regionStart;
     --regionEnd;
 
@@ -376,7 +377,7 @@ jumpToRegion(FormattedFile<Bam, Input, TSpec> & bamFile,
     // -------------------------------------------------------------------------
     // We want to be consistent with viewRecords and thus expect 1-based coordinates.
     // Since SeqAn works 0-based we need to subtract 1.
-    SEQAN_ASSERT_GEQ_MSG(regionStart, 1, "Expect 1-based region interval which excludes 0 as a start pos.");
+    SEQAN_ASSERT_GEQ_MSG(regionStart, 1u, "Expect 1-based region interval which excludes 0 as a start pos.");
     --regionStart;
     --regionEnd;
 
