@@ -118,6 +118,9 @@ struct PreferGapsAtEnd_ : False{};
 template <typename TAlgorithm, typename TTracebackSpec, typename TExecSpec>
 struct PreferGapsAtEnd_<DPProfile_<TAlgorithm, AffineGaps, TTracebackSpec, TExecSpec> > : True{};
 
+template <typename TAlgorithm, typename TTracebackSpec, typename TExecSpec>
+struct PreferGapsAtEnd_<DPProfile_<TAlgorithm, ConvexGaps, TTracebackSpec, TExecSpec> > : True{};
+
 template <typename TAlgorithm, typename TTraceSpec, typename TExecSpec>
 struct PreferGapsAtEnd_<DPProfile_<TAlgorithm, LinearGaps, TracebackOn<TracebackConfig_<TTraceSpec, GapsRight> >, TExecSpec> > : True{};
 
@@ -183,7 +186,7 @@ _isInBand(TracebackCoordinator_<TPosition> const & coordinator)
     return (coordinator._currColumn > coordinator._breakpoint1 || coordinator._currColumn <= coordinator._breakpoint2);
 }
 
-// ----------------------------------------------------------------------------
+// --------------------------------------------------/--------------------------
 // Function _doTracebackGoDiagonal()
 // ----------------------------------------------------------------------------
 
@@ -237,7 +240,7 @@ _doTracebackGoVertical(TTarget & target,
         fragmentLength = 0;
     }
     // We are in a vertical gap. So continue after we reach the end of the vertical gap.
-    SEQAN_IF_CONSTEXPR (IsSameType<TGapCosts, AffineGaps>::VALUE)
+    SEQAN_IF_CONSTEXPR (IsSameType<TGapCosts, AffineGaps>::VALUE || IsSameType<TGapCosts, ConvexGaps>::VALUE)
     {
         while ((!(traceValue & TraceBitMap_<>::VERTICAL_OPEN) || (traceValue & TraceBitMap_<>::VERTICAL)) &&
                tracebackCoordinator._currRow != 1)
@@ -315,7 +318,7 @@ _doTracebackGoHorizontal(TTarget & target,
         lastTraceValue = TraceBitMap_<>::HORIZONTAL;
         fragmentLength = 0;
     }
-    SEQAN_IF_CONSTEXPR (IsSameType<TGapCosts, AffineGaps>::VALUE)
+    SEQAN_IF_CONSTEXPR (IsSameType<TGapCosts, AffineGaps>::VALUE || IsSameType<TGapCosts, ConvexGaps>::VALUE)
     {
         while ((!(traceValue & TraceBitMap_<>::HORIZONTAL_OPEN) || (traceValue & TraceBitMap_<>::HORIZONTAL)) &&
                tracebackCoordinator._currColumn != 1)

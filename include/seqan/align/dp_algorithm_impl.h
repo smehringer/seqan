@@ -1212,6 +1212,50 @@ _correctTraceValue(TTraceNavigator & traceNavigator,
 template <typename TTraceNavigator, typename TScoreValue, typename TDPScoutSpec>
 inline SEQAN_FUNC_ENABLE_IF(Not<Is<SimdVectorConcept<TScoreValue> > >, void)
 _correctTraceValue(TTraceNavigator & traceNavigator,
+                   DPScout_<DPCell_<TScoreValue, ConvexGaps>, TDPScoutSpec>  const & dpScout)
+{
+    _setToPosition(traceNavigator, maxHostPosition(dpScout));
+
+    if (_verticalScoreOfCell(dpScout._maxScore) == _scoreOfCell(dpScout._maxScore))
+    {
+        value(traceNavigator) &= ~TraceBitMap_<TScoreValue>::DIAGONAL;
+        value(traceNavigator) |= TraceBitMap_<TScoreValue>::MAX_FROM_VERTICAL_MATRIX;
+    }
+    else if (_horizontalScoreOfCell(dpScout._maxScore) == _scoreOfCell(dpScout._maxScore))
+    {
+        value(traceNavigator) &= ~TraceBitMap_<TScoreValue>::DIAGONAL;
+        value(traceNavigator) |= TraceBitMap_<TScoreValue>::MAX_FROM_HORIZONTAL_MATRIX;
+    }
+}
+
+template <typename TTraceNavigator, typename TScoreValue, typename TDPScoutSpec>
+inline SEQAN_FUNC_ENABLE_IF(Is<SimdVectorConcept<TScoreValue> >, void)
+_correctTraceValue(TTraceNavigator & traceNavigator,
+                   DPScout_<DPCell_<TScoreValue, ConvexGaps>, TDPScoutSpec>  const & dpScout)
+{
+    using TMaskType = typename SimdMaskVector<TScoreValue>::Type;
+    _setToPosition(traceNavigator, toGlobalPosition(traceNavigator,
+                                                    maxHostCoordinate(dpScout, +DPMatrixDimension_::HORIZONTAL),
+                                                    maxHostCoordinate(dpScout, +DPMatrixDimension_::VERTICAL)));
+    TMaskType flag = createVector<TMaskType>(0);
+    assignValue(flag, dpScout._simdLane, -1);
+    auto cmpV = cmpEq(_verticalScoreOfCell(dpScout._maxScore), _scoreOfCell(dpScout._maxScore)) & flag;
+    auto cmpH = cmpEq(_horizontalScoreOfCell(dpScout._maxScore), _scoreOfCell(dpScout._maxScore)) & flag;
+
+    value(traceNavigator) = blend(value(traceNavigator),
+                                  value(traceNavigator) & ~TraceBitMap_<TScoreValue>::DIAGONAL,
+                                  cmpV | cmpH);
+    value(traceNavigator) = blend(value(traceNavigator),
+                                  value(traceNavigator) | TraceBitMap_<TScoreValue>::MAX_FROM_VERTICAL_MATRIX,
+                                  cmpV);
+    value(traceNavigator) = blend(value(traceNavigator),
+                                  value(traceNavigator) | TraceBitMap_<TScoreValue>::MAX_FROM_HORIZONTAL_MATRIX,
+                                  cmpH);
+}
+
+template <typename TTraceNavigator, typename TScoreValue, typename TDPScoutSpec>
+inline SEQAN_FUNC_ENABLE_IF(Not<Is<SimdVectorConcept<TScoreValue> > >, void)
+_correctTraceValue(TTraceNavigator & traceNavigator,
                    DPScout_<DPCell_<TScoreValue, DynamicGaps>, TDPScoutSpec>  const & dpScout)
 {
     _setToPosition(traceNavigator, maxHostPosition(dpScout));

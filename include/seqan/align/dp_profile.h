@@ -315,6 +315,21 @@ struct AffineGaps_;
 typedef Tag<AffineGaps_> AffineGaps;
 
 // ----------------------------------------------------------------------------
+// Tag ConvexGaps
+// ----------------------------------------------------------------------------
+
+/*!
+ * @tag AlignmentAlgorithmTags#ConvexGaps
+ * @headerfile <seqan/align.h>
+ * @brief Tag for selecting affine gap cost model. This tag can be used for all standard DP algorithms.
+ *
+ * @signature struct ConvexGaps_;
+ * @signature typedef Tag<ConvexGaps_> ConvexGaps;
+ */
+struct ConvexGaps_;
+typedef Tag<ConvexGaps_> ConvexGaps;
+
+// ----------------------------------------------------------------------------
 // Tag DynamicGaps
 // ----------------------------------------------------------------------------
 

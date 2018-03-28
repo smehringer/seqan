@@ -119,6 +119,7 @@
 #include <seqan/align/dp_cell.h>
 #include <seqan/align/dp_cell_linear.h>
 #include <seqan/align/dp_cell_affine.h>
+#include <seqan/align/dp_cell_convex.h>
 #include <seqan/align/dp_cell_dynamic.h>
 
 // The DP Scout
@@ -134,6 +135,7 @@
 #include <seqan/align/dp_formula.h>
 #include <seqan/align/dp_formula_linear.h>
 #include <seqan/align/dp_formula_affine.h>
+#include <seqan/align/dp_formula_convex.h>
 #include <seqan/align/dp_formula_dynamic.h>
 
 // Defines meta informations which determine how to compute a column and a
