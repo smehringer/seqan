@@ -248,6 +248,30 @@ bamRecordToAlignment(Align<TSource, TSpec> & result, TReference & reference, Bam
     cigarToGapAnchorRead(row(result, 1), record.cigar);
 }
 
+/*!
+ * @fn BamAlignmentRecord#bamRecordToAnchorGaps
+ * @headerfile <seqan/bam_io.h>
+ * @brief Construct an @link Align @endlink object from a BamAlignmentRecord object.
+ *
+ * @signature void bamRecordToAnchorGaps(gaps, record);
+ *
+ * @param[out] gaps     The @link ArrayGaps @endlink object to create the gaps object in.
+ * @param[in]  record    The @link BamAlignmentRecord @endlink to construct alignment from.
+ *
+ * The gaps from the CIGAR string in <tt>record</tt> will be
+ * copied to <tt>gaps</tt>.
+ *
+ */
+
+template <typename TSequence, typename TGapAnchors>
+void
+bamRecordToAnchorGaps(Gaps<TSequence, AnchorGaps<TGapAnchors>> & result, BamAlignmentRecord const & record)
+{
+    assignSource(result, record.seq);
+    cigarToGapAnchorRead(result, record.cigar);
+}
+
+
 }  // namespace seqan
 
 #endif  // #ifndef INCLUDE_SEQAN_BAM_IO_BAM_ALIGNMENT_RECORD_UTIL_H_
