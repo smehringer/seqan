@@ -28,6 +28,132 @@ Lesser General Public License for more details.
 
 using namespace seqan;
 
+struct Minimizer
+{
+public:
+
+    // Random, but static value for xor for hashes. Counteracts consecutive minimizers.
+    // E.g., without it, the next minimizer after a poly-A region AAAAA would be most likely something like AAAAC.
+    uint64_t const seed{0x8F3F73B5CF1C9ADE};
+    // Shape for forward hashes
+    Shape<Iupac, SimpleShape> kmerShape;
+    // Shape for hashes on reverse complement
+    Shape<Iupac, SimpleShape> revCompShape;
+    // k-mer size
+    uint16_t k{20};
+    // window size
+    uint32_t w{20};
+    // start positions of minimizers
+    std::vector<uint64_t> minBegin;
+    // end positions of minimizers
+    std::vector<uint64_t> minEnd;
+
+    template<typename TIt>
+    inline void hashInit(TIt it)
+    {
+        seqan::hashInit(kmerShape, it);
+    }
+
+    template<typename TIt>
+    inline auto hashNext(TIt it)
+    {
+        return seqan::hashNext(kmerShape, it);
+    }
+
+    template<typename TIt>
+    inline void revHashInit(TIt it)
+    {
+        seqan::hashInit(revCompShape, it);
+    }
+
+    template<typename TIt>
+    inline auto revHashNext(TIt it)
+    {
+        return seqan::hashNext(revCompShape, it);
+    }
+
+    inline auto length()
+    {
+        return seqan::length(kmerShape);
+    }
+
+    inline void resize(uint16_t newKmerSize, uint32_t neww)
+    {
+        k = newKmerSize;
+        w = neww;
+        seqan::resize(kmerShape, k);
+        seqan::resize(revCompShape, k);
+    }
+
+    String<uint64_t> getMinimizer(String<Iupac> const & text)
+    {
+        if (k > seqan::length(text))
+            return String<uint64_t> {};
+
+        uint64_t possible = seqan::length(text) > w ? seqan::length(text) - w + 1 : 1;
+        uint32_t windowKmers = w - k + 1;
+
+        String<uint64_t> kmerHashes{};
+        reserve(kmerHashes, possible); // maybe rather reserve to expected?
+
+        // Stores hash, begin and end for all k-mers in the window
+        std::deque<uint64_t> windowValues;
+
+        auto it = begin(text);
+        hashInit(it);
+
+        // Initialisation. We need to compute all hashes for the first window.
+        for (uint32_t i = 0; i < windowKmers; ++i)
+        {
+            // Get smallest canonical k-mer
+            uint64_t kmerHash = hashNext(it) ^ seed;
+
+            windowValues.push_back(kmerHash);
+
+            ++it;
+        }
+
+        auto min = std::min_element(std::begin(windowValues), std::end(windowValues));
+        appendValue(kmerHashes, *min);
+
+        // For the following windows, we remove the first window k-mer (is now not in window) and add the new k-mer
+        // that results from the window shifting
+        bool minimizer_changed{false};
+        for (uint64_t i = 1; i < possible; ++i)
+        {
+            if (min == std::begin(windowValues))
+            {
+                windowValues.pop_front();
+                min = std::min_element(std::begin(windowValues), std::end(windowValues));
+                minimizer_changed = true;
+            }
+            else
+                windowValues.pop_front();
+
+            uint64_t kmerHash = hashNext(it) ^ seed;
+            windowValues.push_back(kmerHash);
+            ++it;
+
+            if (windowValues.back() < *min)
+            {
+                min = std::end(windowValues) - 1;
+                minimizer_changed = true;
+            }
+
+            if (minimizer_changed)
+            {
+                appendValue(kmerHashes, *min);
+                minimizer_changed = false;
+            }
+        }
+
+        return kmerHashes;
+    }
+};
+
+
+using namespace seqan;
+
 //////////////////////////////////////////////////////////////////////////////////
 
 inline void
@@ -49,6 +175,34 @@ _loadSequences(TSeqSet& sequences, TNameSet& fastaIDs, const char *fileName)
         return false;
     }
     readRecords(fastaIDs, sequences, inFile);
+    return (length(fastaIDs) > 0u);
+}
+
+template <typename TNameSet>
+bool
+_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
+{
+    SeqFileIn inFile;
+    if (!open(inFile, fileName))
+    {
+        std::cerr << "Could not open " << fileName << "for reading!" << std::endl;
+        return false;
+    }
+
+    StringSet<String<Iupac>, Owner<>> sequences;
+    readRecords(fastaIDs, sequences, inFile);
+
+    // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
+    resize(minimizer_sequences, length(sequences));
+    Minimizer mini;
+    mini.resize(20, 500);
+    for (size_t idx = 0; idx < length(sequences); ++idx)
+        minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
+
+    std::cout << length(minimizer_sequences[0]) << std::endl;
+    std::cout << length(minimizer_sequences[1]) << std::endl;
+    std::cout << length(minimizer_sequences[2]) << std::endl;
+
     return (length(fastaIDs) > 0u);
 }
 
@@ -91,6 +245,10 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
         write(outStream, gAlign, sequenceNames, FastaFormat());
     else
         write(outStream, gAlign, sequenceNames, MsfFormat());
+
+    std::ofstream dotFile("graph.dot");
+    writeRecords(dotFile, gAlign, DotDrawing());
+    dotFile.close();
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -173,6 +331,10 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
         else if (tmpVal == "lcs")
         {
             appendValue(msaOpt.method, 3);
+        }
+        else if (tmpVal == "none")
+        {
+            clear(msaOpt.method);
         }
     }
 
@@ -292,6 +454,24 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
+inline void
+_initScoreMatrix(ArgumentParser& parser, uint64_t const)
+{
+    // String<char> matrix;
+    // getOptionValue(matrix, parser, "matrix");
+    // if (isSet(parser, "matrix"))
+    // {
+    //     Score<int, ScoreMatrix<> > sc;
+    //     loadScoreMatrix(sc, toCString(matrix));
+    //     _initMsaParams<Dna5>(parser, sc);
+    // }
+    // else
+    // {
+    std::cout << "i am here" << std::endl;
+        Score<int> sc;
+        _initMsaParams<uint64_t>(parser, sc);
+    // }
+}
 
 inline void
 _initScoreMatrix(ArgumentParser& parser, Dna5 const)
@@ -390,7 +570,7 @@ _setUpArgumentParser(ArgumentParser & parser)
     setValidValues(parser, "seq", getFileExtensions(Fasta()));  // allow only fasta files as input
 
     addOption(parser, ArgParseOption("a", "alphabet", "The used sequence alphabet.", ArgParseArgument::STRING));
-    setValidValues(parser, "alphabet", "protein dna rna iupac");
+    setValidValues(parser, "alphabet", "protein dna rna iupac minimizer");
     setDefaultValue(parser, "alphabet", "protein");
 
     addOption(parser, ArgParseOption("o", "outfile", "Name of the output file.", ArgParseArgument::OUTPUT_FILE));
@@ -409,7 +589,7 @@ _setUpArgumentParser(ArgumentParser & parser)
               ArgParseOption("m", "method", "Defines the generation method for matches. "
                              "To select multiple generation methods recall this option with different arguments. ",
                              ArgParseArgument::STRING, "", true));
-    setValidValues(parser, "method", "global local overlap lcs");
+    setValidValues(parser, "method", "global local overlap lcs none");
     setDefaultValue(parser, "method", "global");
     addDefaultValue(parser, "method", "local");
 
@@ -533,6 +713,8 @@ int main(int argc, const char *argv [])
         _initScoreMatrix(parser, Rna5());
     else if (alphabet == "iupac")
         _initScoreMatrix(parser, Iupac());
+    else if (alphabet == "minimizer")
+        _initScoreMatrix(parser, uint64_t());
     else
         _initScoreMatrix(parser, AminoAcid());
 
