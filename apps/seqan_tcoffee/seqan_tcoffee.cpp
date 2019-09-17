@@ -28,10 +28,6 @@ Lesser General Public License for more details.
 
 using namespace seqan;
 
-#if !SEQAN_HAS_ZLIB
-static_assert(false, "zlb not there"); 
-#endif  // #if SEQAN_HAS_ZLIB
-
 struct Minimizer
 {
 public:
@@ -188,7 +184,7 @@ _loadSequences(TSeqSet& sequences, StringSet<String<uint64_t>, Owner<>> &, TName
 
 template <typename TNameSet>
 bool
-_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, 
+_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
                StringSet<String<uint64_t>, Owner<>> & minimizer_pos_sequences,
                TNameSet& fastaIDs, const char *fileName)
 {
@@ -216,6 +212,36 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
     return (length(fastaIDs) > 0u);
 }
 
+template <typename TNameSet>
+bool
+_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
+{
+    SeqFileIn inFile;
+    if (!open(inFile, fileName))
+    {
+        std::cerr << "Could not open " << fileName << "for reading!" << std::endl;
+        return false;
+    }
+
+    StringSet<String<Iupac>, Owner<>> sequences;
+    readRecords(fastaIDs, sequences, inFile);
+
+    // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
+    resize(minimizer_sequences, length(sequences));
+    Minimizer mini;
+    mini.resize(20, 200);
+    std::cout << "minimizer: k20, w200" << std::endl;
+
+    for (size_t idx = 0; idx < length(sequences); ++idx)
+        minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
+
+    std::cout << length(minimizer_sequences[0]) << std::endl;
+    std::cout << length(minimizer_sequences[1]) << std::endl;
+    std::cout << length(minimizer_sequences[2]) << std::endl;
+
+    return (length(fastaIDs) > 0u);
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename TAlphabet, typename TScore>
@@ -232,7 +258,7 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
     _loadSequences(sequenceSet, minimizer_pos_set, sequenceNames, msaOpt.seqfile.c_str());
 
     // Alignment of the sequences
-    typedef Graph<Alignment<StringSet<TSequence, Dependent<> >, void, WithoutEdgeId> > TGraph; 
+    typedef Graph<Alignment<StringSet<TSequence, Dependent<> >, void, WithoutEdgeId> > TGraph;
     TGraph gAlign;
 
     // MSA
@@ -277,7 +303,7 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
         auto regStart = fragmentBegin(gAlign, *it);
         if (regStart == 0)
             outs << "0"; // if it is the very first minimizer, include beginning of the sequence
-        else 
+        else
             outs << minimizer_pos_set[id][regStart];
         outs << ",";
         auto regEnd = fragmentBegin(gAlign, *it) + fragmentLength(gAlign, *it);
@@ -290,7 +316,7 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
         outs << id;
         append(property(nodeMap, *it), outs.str().c_str());
         //std::cout << property(nodeMap, *it) << std::endl;
-    } 
+    }
 
     std::ofstream dotFile("graph.dot");
     writeRecords(dotFile, gAlign, nodeMap, edgeMap,DotDrawing());
