@@ -150,7 +150,7 @@ _createNodeAttributes(Graph<TSpec> const& g,
 {
     typedef Graph<TSpec> TGraph;
     resizeVertexMap(nodeMap, g);
-
+std::cerr << "HELOO\n";
     typedef typename Iterator<TGraph, VertexIterator>::Type TConstIter;
     TConstIter it(g);
     for(;!atEnd(it);++it) {

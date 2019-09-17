@@ -335,7 +335,7 @@ void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
     // Initialize alignment object
     clear(gAlign);
     assignStringSet(gAlign, sequenceSet);
-
+std::cout << "Start" << std::endl;
     // Some alignment constants
     TStringSet & seqSet = stringSet(gAlign);
     TSize nSeq = length(seqSet);
@@ -349,9 +349,9 @@ void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
     std::cout << std::setw(30) << std::left << "Average sequence length: " << std::setw(10) << std::right << seqTotalLen / nSeq << std::endl;
     std::cout << std::setw(30) << std::left << "Total sequences length: " << std::setw(10) << std::right << seqTotalLen << std::endl;
 
-    double segmentGenerationTime = sysTime();
 #endif
 
+    double segmentGenerationTime = sysTime();
     // Select all possible pairs for global and local alignments
     String<TSize> pList;
     selectPairs(seqSet, pList);
@@ -471,8 +471,8 @@ void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
         }
     }
 
-#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Segment-match generation:" << std::setw(10) << std::right << sysTime() - segmentGenerationTime << "  s" << std::endl;
+#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Number of segment-matches:" << std::setw(10) << std::right << length(matches) << std::endl;
 #endif
 
@@ -485,8 +485,8 @@ void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
     clear(matches);
     clear(scores);
 
-#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Number of vertices:" << std::setw(10) << std::right << numVertices(g) << std::endl;
+#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Number of edges:" << std::setw(10) << std::right << numEdges(g) << std::endl;
 
     double guideTreeTime = sysTime();
@@ -525,17 +525,17 @@ void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
 #ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Guide-tree:" << std::setw(10) << std::right << sysTime() - guideTreeTime << "  s" << std::endl;
 
-    double tripletStartTime = sysTime();
 #endif
 
+    double tripletStartTime = sysTime();
     // Triplet extension
     if (nSeq < threshold)
         tripletLibraryExtension(g);
     else
         tripletLibraryExtension(g, guideTree, threshold / 2);
 
-#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Triplet extension:" << std::setw(10) << std::right << sysTime() - tripletStartTime << "  s" << std::endl;
+#ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Number of edges after triplet:" << std::setw(10) << std::right << numEdges(g) << std::endl;
 
     double progressiveAlignmentTime = sysTime();

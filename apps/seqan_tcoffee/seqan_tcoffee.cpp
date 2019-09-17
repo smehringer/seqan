@@ -28,6 +28,10 @@ Lesser General Public License for more details.
 
 using namespace seqan;
 
+#if !SEQAN_HAS_ZLIB
+static_assert(false, "zlb not there"); 
+#endif  // #if SEQAN_HAS_ZLIB
+
 struct Minimizer
 {
 public:
@@ -85,16 +89,18 @@ public:
         seqan::resize(revCompShape, k);
     }
 
-    String<uint64_t> getMinimizer(String<Iupac> const & text)
+    std::tuple<String<uint64_t>, String<uint64_t>>  getMinimizer(String<Iupac> const & text)
     {
         if (k > seqan::length(text))
-            return String<uint64_t> {};
+            return {String<uint64_t>{}, String<uint64_t>{}};
 
         uint64_t possible = seqan::length(text) > w ? seqan::length(text) - w + 1 : 1;
         uint32_t windowKmers = w - k + 1;
 
         String<uint64_t> kmerHashes{};
+        String<uint64_t> kmerHashPoss{};
         reserve(kmerHashes, possible); // maybe rather reserve to expected?
+        reserve(kmerHashPoss, possible); // maybe rather reserve to expected?
 
         // Stores hash, begin and end for all k-mers in the window
         std::deque<uint64_t> windowValues;
@@ -115,11 +121,12 @@ public:
 
         auto min = std::min_element(std::begin(windowValues), std::end(windowValues));
         appendValue(kmerHashes, *min);
+        appendValue(kmerHashPoss, std::distance(std::begin(windowValues), min));
 
         // For the following windows, we remove the first window k-mer (is now not in window) and add the new k-mer
         // that results from the window shifting
         bool minimizer_changed{false};
-        for (uint64_t i = 1; i < possible; ++i)
+        for (uint64_t pos = 1; pos < possible; ++pos)
         {
             if (min == std::begin(windowValues))
             {
@@ -143,11 +150,12 @@ public:
             if (minimizer_changed)
             {
                 appendValue(kmerHashes, *min);
+                appendValue(kmerHashPoss, pos + std::distance(std::begin(windowValues), min));
                 minimizer_changed = false;
             }
         }
 
-        return kmerHashes;
+        return {kmerHashes, kmerHashPoss};
     }
 };
 
@@ -166,7 +174,7 @@ _addVersion(ArgumentParser & parser)
 
 template <typename TSeqSet, typename TNameSet>
 bool
-_loadSequences(TSeqSet& sequences, TNameSet& fastaIDs, const char *fileName)
+_loadSequences(TSeqSet& sequences, StringSet<String<uint64_t>, Owner<>> &, TNameSet& fastaIDs, const char *fileName)
 {
     SeqFileIn inFile;
     if (!open(inFile, fileName))
@@ -180,7 +188,9 @@ _loadSequences(TSeqSet& sequences, TNameSet& fastaIDs, const char *fileName)
 
 template <typename TNameSet>
 bool
-_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
+_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, 
+               StringSet<String<uint64_t>, Owner<>> & minimizer_pos_sequences,
+               TNameSet& fastaIDs, const char *fileName)
 {
     SeqFileIn inFile;
     if (!open(inFile, fileName))
@@ -194,14 +204,14 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TName
 
     // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
     resize(minimizer_sequences, length(sequences));
+    resize(minimizer_pos_sequences, length(sequences));
     Minimizer mini;
     mini.resize(20, 500);
     for (size_t idx = 0; idx < length(sequences); ++idx)
-        minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
-
-    std::cout << length(minimizer_sequences[0]) << std::endl;
-    std::cout << length(minimizer_sequences[1]) << std::endl;
-    std::cout << length(minimizer_sequences[2]) << std::endl;
+    {
+        std::tie(minimizer_sequences[idx], minimizer_pos_sequences[idx]) = mini.getMinimizer(sequences[idx]);
+    std::cout << length(minimizer_sequences[idx]) << std::endl;
+    }
 
     return (length(fastaIDs) > 0u);
 }
@@ -217,10 +227,13 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
     StringSet<String<char> > sequenceNames;
     typedef VirtualStream<char, Output> TOutStream;
 
-    _loadSequences(sequenceSet, sequenceNames, msaOpt.seqfile.c_str());
+    StringSet<String<uint64_t>, Owner<>> minimizer_pos_set;
+
+    _loadSequences(sequenceSet, minimizer_pos_set, sequenceNames, msaOpt.seqfile.c_str());
 
     // Alignment of the sequences
-    Graph<Alignment<StringSet<TSequence, Dependent<> >, void, WithoutEdgeId> > gAlign;
+    typedef Graph<Alignment<StringSet<TSequence, Dependent<> >, void, WithoutEdgeId> > TGraph; 
+    TGraph gAlign;
 
     // MSA
     try
@@ -246,8 +259,41 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
     else
         write(outStream, gAlign, sequenceNames, MsfFormat());
 
+    String<String<char> > nodeMap;
+    String<String<char> > edgeMap;
+    _createEdgeAttributes(gAlign, edgeMap);
+
+    // create node attributes
+    typedef typename Id<TGraph>::Type TIdType;
+    resizeVertexMap(nodeMap, gAlign);
+
+    typedef typename Iterator<TGraph, VertexIterator>::Type TConstIter;
+    TConstIter it(gAlign);
+    for(;!atEnd(it);++it) {
+        TIdType id = sequenceId(gAlign, *it);
+        std::ostringstream outs;
+        outs << "label = \"";
+        outs << "[";
+        auto regStart = fragmentBegin(gAlign, *it);
+        if (regStart == 0)
+            outs << "0"; // if it is the very first minimizer, include beginning of the sequence
+        else 
+            outs << minimizer_pos_set[id][regStart];
+        outs << ",";
+        auto regEnd = fragmentBegin(gAlign, *it) + fragmentLength(gAlign, *it);
+        if (regEnd >= length(minimizer_pos_set[id]))
+            outs << "end";
+        else
+            outs << minimizer_pos_set[id][regEnd];
+        outs << ")";
+        outs << "\", group = ";
+        outs << id;
+        append(property(nodeMap, *it), outs.str().c_str());
+        //std::cout << property(nodeMap, *it) << std::endl;
+    } 
+
     std::ofstream dotFile("graph.dot");
-    writeRecords(dotFile, gAlign, DotDrawing());
+    writeRecords(dotFile, gAlign, nodeMap, edgeMap,DotDrawing());
     dotFile.close();
 }
 
@@ -567,7 +613,7 @@ _setUpArgumentParser(ArgumentParser & parser)
 
     addSection(parser, "Main Options:");
     addOption(parser, ArgParseOption("s", "seq", "Name of multi-fasta input file.", ArgParseArgument::INPUT_FILE));
-    setValidValues(parser, "seq", getFileExtensions(Fasta()));  // allow only fasta files as input
+    // setValidValues(parser, "seq", getFileExtensions(Fasta()));  // allow only fasta files as input
 
     addOption(parser, ArgParseOption("a", "alphabet", "The used sequence alphabet.", ArgParseArgument::STRING));
     setValidValues(parser, "alphabet", "protein dna rna iupac minimizer");
