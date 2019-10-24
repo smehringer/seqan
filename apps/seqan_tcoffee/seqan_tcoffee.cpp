@@ -213,7 +213,7 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
         {
             for (size_t jdx = 0; jdx < length(iupac_sequences[idx]); ++jdx)
             {
-                appendValue(sequences, iupac_sequences[idx][jdx]);
+                appendValue(sequences[idx], iupac_sequences[idx][jdx]);
             }
         }
     }
