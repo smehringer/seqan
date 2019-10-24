@@ -36,9 +36,9 @@ public:
     // E.g., without it, the next minimizer after a poly-A region AAAAA would be most likely something like AAAAC.
     uint64_t const seed{0x8F3F73B5CF1C9ADE};
     // Shape for forward hashes
-    Shape<Iupac, SimpleShape> kmerShape;
+    Shape<Dna, SimpleShape> kmerShape;
     // Shape for hashes on reverse complement
-    Shape<Iupac, SimpleShape> revCompShape;
+    Shape<Dna, SimpleShape> revCompShape;
     // k-mer size
     uint16_t k{20};
     // window size
@@ -85,7 +85,7 @@ public:
         seqan::resize(revCompShape, k);
     }
 
-    std::tuple<String<uint64_t>, String<uint64_t>>  getMinimizer(String<Iupac> const & text)
+    std::tuple<String<uint64_t>, String<uint64_t>>  getMinimizer(String<Dna> const & text)
     {
         if (k > seqan::length(text))
             return {String<uint64_t>{}, String<uint64_t>{}};
@@ -151,6 +151,14 @@ public:
             }
         }
 
+        for (size_t i = 0; i < seqan::length(kmerHashPoss) - 1; ++i)
+        {
+            if(kmerHashPoss[i] > kmerHashPoss[i + 1])
+            {
+                std::cerr << kmerHashPoss[i] << " at " << i << " is larger than " << kmerHashPoss[i + 1] << "\n";
+            }
+        }
+
         return {kmerHashes, kmerHashPoss};
     }
 };
@@ -195,52 +203,64 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
         return false;
     }
 
-    StringSet<String<Iupac>, Owner<>> sequences;
-    readRecords(fastaIDs, sequences, inFile);
+    StringSet<String<Dna>, Owner<>> sequences;
+    {
+        StringSet<String<Iupac>, Owner<>> iupac_sequences;
+        readRecords(fastaIDs, iupac_sequences, inFile);
+        resize(sequences, length(iupac_sequences));
+
+        for (size_t idx = 0; idx < length(iupac_sequences); ++idx)
+        {
+            for (size_t jdx = 0; jdx < length(iupac_sequences[idx]); ++jdx)
+            {
+                appendValue(sequences, iupac_sequences[idx][jdx]);
+            }
+        }
+    }
 
     // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
     resize(minimizer_sequences, length(sequences));
     resize(minimizer_pos_sequences, length(sequences));
     Minimizer mini;
-    mini.resize(20, 500);
+    mini.resize(20, 1000);
     for (size_t idx = 0; idx < length(sequences); ++idx)
     {
         std::tie(minimizer_sequences[idx], minimizer_pos_sequences[idx]) = mini.getMinimizer(sequences[idx]);
-    std::cout << length(minimizer_sequences[idx]) << std::endl;
+        std::cout << length(minimizer_sequences[idx]) << std::endl;
     }
 
     return (length(fastaIDs) > 0u);
 }
 
-template <typename TNameSet>
-bool
-_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
-{
-    SeqFileIn inFile;
-    if (!open(inFile, fileName))
-    {
-        std::cerr << "Could not open " << fileName << "for reading!" << std::endl;
-        return false;
-    }
+// template <typename TNameSet>
+// bool
+// _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
+// {
+//     SeqFileIn inFile;
+//     if (!open(inFile, fileName))
+//     {
+//         std::cerr << "Could not open " << fileName << "for reading!" << std::endl;
+//         return false;
+//     }
 
-    StringSet<String<Iupac>, Owner<>> sequences;
-    readRecords(fastaIDs, sequences, inFile);
+//     StringSet<String<Iupac>, Owner<>> sequences;
+//     readRecords(fastaIDs, sequences, inFile);
 
-    // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
-    resize(minimizer_sequences, length(sequences));
-    Minimizer mini;
-    mini.resize(20, 200);
-    std::cout << "minimizer: k20, w200" << std::endl;
+//     // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
+//     resize(minimizer_sequences, length(sequences));
+//     Minimizer mini;
+//     mini.resize(20, 1000);
+//     std::cout << "minimizer: k20, w1000" << std::endl;
 
-    for (size_t idx = 0; idx < length(sequences); ++idx)
-        minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
+//     for (size_t idx = 0; idx < length(sequences); ++idx)
+//         minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
 
-    std::cout << length(minimizer_sequences[0]) << std::endl;
-    std::cout << length(minimizer_sequences[1]) << std::endl;
-    std::cout << length(minimizer_sequences[2]) << std::endl;
+//     std::cout << length(minimizer_sequences[0]) << std::endl;
+//     std::cout << length(minimizer_sequences[1]) << std::endl;
+//     std::cout << length(minimizer_sequences[2]) << std::endl;
 
-    return (length(fastaIDs) > 0u);
-}
+//     return (length(fastaIDs) > 0u);
+// }
 
 //////////////////////////////////////////////////////////////////////////////////
 
