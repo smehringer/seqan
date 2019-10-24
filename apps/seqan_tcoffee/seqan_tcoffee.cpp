@@ -121,33 +121,22 @@ public:
 
         // For the following windows, we remove the first window k-mer (is now not in window) and add the new k-mer
         // that results from the window shifting
-        bool minimizer_changed{false};
+        uint64_t current_pos{kmerHashPoss[0]};
         for (uint64_t pos = 1; pos < possible; ++pos)
         {
-            if (min == std::begin(windowValues))
-            {
-                windowValues.pop_front();
-                min = std::min_element(std::begin(windowValues), std::end(windowValues));
-                minimizer_changed = true;
-            }
-            else
-                windowValues.pop_front();
+            windowValues.pop_front();
 
             uint64_t kmerHash = hashNext(it) ^ seed;
             windowValues.push_back(kmerHash);
             ++it;
 
-            if (windowValues.back() < *min)
-            {
-                min = std::end(windowValues) - 1;
-                minimizer_changed = true;
-            }
+            min = std::min_element(std::begin(windowValues), std::end(windowValues));
 
-            if (minimizer_changed)
+            if (current_pos != pos + std::distance(std::begin(windowValues), min))
             {
                 appendValue(kmerHashes, *min);
-                appendValue(kmerHashPoss, pos + std::distance(std::begin(windowValues), min));
-                minimizer_changed = false;
+                current_pos = pos + std::distance(std::begin(windowValues), min);
+                appendValue(kmerHashPoss, current_pos);
             }
         }
 
