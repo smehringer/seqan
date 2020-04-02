@@ -211,7 +211,7 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
     resize(minimizer_sequences, length(sequences));
     resize(minimizer_pos_sequences, length(sequences));
     Minimizer mini;
-    mini.resize(20, 1000);
+    mini.resize(12, 20);
     for (size_t idx = 0; idx < length(sequences); ++idx)
     {
         std::tie(minimizer_sequences[idx], minimizer_pos_sequences[idx]) = mini.getMinimizer(sequences[idx]);
@@ -262,18 +262,32 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
     StringSet<String<char> > sequenceNames;
     typedef VirtualStream<char, Output> TOutStream;
 
-    StringSet<String<uint64_t>, Owner<>> minimizer_pos_set;
-
-    _loadSequences(sequenceSet, minimizer_pos_set, sequenceNames, msaOpt.seqfile.c_str());
-
     // Alignment of the sequences
     typedef Graph<Alignment<StringSet<TSequence, Dependent<> >, void, WithoutEdgeId> > TGraph;
     TGraph gAlign;
+    typedef typename Size<StringSet<TSequence, Dependent<> >>::Type TSize;
+
+    segment_generation_config<TSize> seg_gen_config;
+    seg_gen_config.seqfiles = msaOpt.seqfiles;
+
+    StringSet<String<uint64_t>, Owner<>> minimizer_pos_set;
+
+    if (length(msaOpt.seqfiles) == 1)
+    {
+        // compute MSA on all pairs of pairs in multi fasta file
+        _loadSequences(sequenceSet, minimizer_pos_set, sequenceNames, msaOpt.seqfiles[0].c_str());
+        selectPairs(sequenceSet, seg_gen_config.global_alignment_pairs); // all-to-all
+    }
+    else // multi multi-record fasta files
+    {
+        assert(length(msaOpt.seqfiles) > 1);
+        // TODO
+    }
 
     // MSA
     try
     {
-        globalMsaAlignment(gAlign, sequenceSet, sequenceNames, msaOpt);
+        globalMsaAlignment(gAlign, sequenceSet, sequenceNames, seg_gen_config, msaOpt);
     }
     catch (const std::bad_alloc & exception)
     {
@@ -379,8 +393,14 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
     MsaOptions<TAlphabet, TScore> msaOpt;
 
     // Set main options
-    getOptionValue(msaOpt.seqfile, parser, "seq");
     getOptionValue(msaOpt.outfile, parser, "outfile");
+
+    std::string tmpVal;
+    for (unsigned int optNo = 0; optNo < getOptionValueCount(parser, "seq"); ++optNo)
+    {
+        getOptionValue(tmpVal, parser, "seq");
+        appendValue(msaOpt.seqfiles, tmpVal);
+    }
 
     String<char> optionVal;
 
@@ -393,7 +413,6 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
     // *********************************************
 
     // Set segment match generation options
-    ::std::string tmpVal;
     for (unsigned int optNo = 0; optNo < getOptionValueCount(parser, "method"); ++optNo)
     {
         getOptionValue(tmpVal, parser, "method", optNo);
@@ -647,7 +666,7 @@ _setUpArgumentParser(ArgumentParser & parser)
     addDescription(parser, "(c) Copyright 2009 by Tobias Rausch");
 
     addSection(parser, "Main Options:");
-    addOption(parser, ArgParseOption("s", "seq", "Name of multi-fasta input file.", ArgParseArgument::INPUT_FILE));
+    addOption(parser, ArgParseOption("s", "seq", "Name of multi-fasta input file.", ArgParseArgument::INPUT_FILE, "foo", true));
     // setValidValues(parser, "seq", getFileExtensions(Fasta()));  // allow only fasta files as input
 
     addOption(parser, ArgParseOption("a", "alphabet", "The used sequence alphabet.", ArgParseArgument::STRING));

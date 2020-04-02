@@ -125,7 +125,7 @@ public:
     String<std::string> blastfiles;     // Blast match files
     String<std::string> mummerfiles;    // MUMmer files
     std::string outfile;                // Output file name
-    std::string seqfile;                // Sequence file name
+    String<std::string> seqfiles;                // Sequence file name
     std::string infile;                 // Alignment file for alignment evaluation
     std::string treefile;               // Guide tree file
 
@@ -136,6 +136,14 @@ public:
      */
     MsaOptions() : rescore(true), outputFormat(0), build(0), isDefaultPairwiseAlignment(true), pairwiseAlignmentMethod(0)
     {}
+};
+
+template <typename TSize>
+struct segment_generation_config
+{
+    String<std::string> seqfiles;
+    String<TSize> global_alignment_pairs;
+    String<TSize> semi_global_alignment_pairs;
 };
 
 // --------------------------------------------------------------------------
@@ -304,6 +312,8 @@ void _appendSegmentMatches(StringSet<String<TValue, TStrSpec>, Dependent<TSpec> 
     appendSegmentMatches(str, pList, score_type, matches, scores, bandWidth, LocalPairwiseLibrary(), alignType, Banded());
 }
 
+
+
 /*!
  * @fn globalMsaAlignment
  * @headerfile <seqan/graph_msa.h>
@@ -319,11 +329,11 @@ void _appendSegmentMatches(StringSet<String<TValue, TStrSpec>, Dependent<TSpec> 
  *
  * The resulting alignment is stored in <tt>align</tt>/<tt>gAlign</tt>.
  */
-
-template <typename TStringSet, typename TCargo, typename TSpec, typename TStringSet1, typename TNames, typename TAlphabet, typename TScore>
+template <typename TStringSet, typename TCargo, typename TSpec, typename TStringSet1, typename TNames, typename TAlphabet, typename TScore, typename Tsize>
 void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
                         TStringSet1 & sequenceSet,
                         TNames & sequenceNames,
+                        segment_generation_config<Tsize> const & config,
                         MsaOptions<TAlphabet, TScore> const & msaOpt)
 {
     typedef typename Value<TScore>::Type TScoreValue;
@@ -341,6 +351,7 @@ std::cout << "Start" << std::endl;
     TSize nSeq = length(seqSet);
     bool isDeepAlignment = (nSeq > 50);  // threshold for what is a deep alignment
     TSize threshold = (isDeepAlignment) ? 30 : 10;  // experimentally proved relation
+
 #ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Number of sequences: " << std::setw(10) << std::right << nSeq << std::endl;
     int seqTotalLen = 0;
@@ -352,9 +363,6 @@ std::cout << "Start" << std::endl;
 #endif
 
     double segmentGenerationTime = sysTime();
-    // Select all possible pairs for global and local alignments
-    String<TSize> pList;
-    selectPairs(seqSet, pList);
 
     // Set-up a distance matrix
     typedef String<TDistanceValue> TDistanceMatrix;
@@ -366,110 +374,38 @@ std::cout << "Start" << std::endl;
     typedef String<TScoreValue> TScoreValues;
     TScoreValues scores;
 
-    // Include segment matches from subalignments
-    if (!empty(msaOpt.alnfiles))
+    // Global alignment
+    if (msaOpt.isDefaultPairwiseAlignment || msaOpt.pairwiseAlignmentMethod == 1) // unbanded
     {
-        typedef typename Iterator<String<std::string> const, Standard>::Type TIter;
-        TIter begIt = begin(msaOpt.alnfiles, Standard());
-        TIter begItEnd = end(msaOpt.alnfiles, Standard());
-        for (; begIt != begItEnd; goNext(begIt))
-        {
-            std::ifstream strm_lib;
-            strm_lib.open((*begIt).c_str(), std::ios_base::in | std::ios_base::binary);
-            read(strm_lib, matches, scores, sequenceNames, FastaAlign());
-            strm_lib.close();
-        }
+        appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, distanceMatrix,
+                             GlobalPairwiseLibrary());
+    }
+    else
+    {
+        appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, distanceMatrix, msaOpt.bandWidth,
+                             GlobalPairwiseLibrary(), Banded());
     }
 
-    // Include computed segment matches
-    if (!empty(msaOpt.method))
+    // Local alignment(s)
+    if (msaOpt.pairwiseAlignmentMethod == 1 || (msaOpt.isDefaultPairwiseAlignment && !isDeepAlignment))
     {
-        typedef typename Iterator<String<unsigned int> const, Standard>::Type TIter;
-        TIter begIt = begin(msaOpt.method, Standard());
-        TIter begItEnd = end(msaOpt.method, Standard());
-        for (; begIt != begItEnd; goNext(begIt))
-        {
-            if (*begIt == 0)
-            {
-                if (msaOpt.pairwiseAlignmentMethod == 1 || (msaOpt.isDefaultPairwiseAlignment && !isDeepAlignment))
-                {
-                    appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, distanceMatrix, GlobalPairwiseLibrary());
-                }
-                else
-                {
-                    appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, distanceMatrix, msaOpt.bandWidth, GlobalPairwiseLibrary(), Banded());
-                }
-            }
-            else if (*begIt == 1) {
-                if (msaOpt.pairwiseAlignmentMethod == 1 || (msaOpt.isDefaultPairwiseAlignment && !isDeepAlignment))
-                {
-                    if (isDeepAlignment)
-                        _appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, DeepAlignment());
-                    else
-                        _appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, DefaultAlignment());
-                }
-                else
-                {
-                    if (isDeepAlignment)
-                        _appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, msaOpt.bandWidth, DeepAlignment());
-                    else
-                        _appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, msaOpt.bandWidth, DefaultAlignment());
-                }
-            }
-            else if (*begIt == 2)
-            {
-                Nothing noth;
-                appendSegmentMatches(seqSet, pList, msaOpt.sc, matches, scores, noth, AlignConfig<true, true, true, true>(), GlobalPairwiseLibrary());
-            }
-            else if (*begIt == 3)
-                appendSegmentMatches(seqSet, pList, matches, scores, LcsLibrary());
-        }
+        if (isDeepAlignment)
+            _appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, DeepAlignment());
+        else
+            _appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, DefaultAlignment());
+    }
+    else
+    {
+        if (isDeepAlignment)
+            _appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, msaOpt.bandWidth, DeepAlignment());
+        else
+            _appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, msaOpt.bandWidth, DefaultAlignment());
     }
 
-    // Include a T-Coffee library
-    if (!empty(msaOpt.libfiles))
-    {
-        typedef typename Iterator<String<std::string> const, Standard>::Type TIter;
-        TIter begIt = begin(msaOpt.libfiles, Standard());
-        TIter begItEnd = end(msaOpt.libfiles, Standard());
-        for (; begIt != begItEnd; goNext(begIt))
-        {
-            std::ifstream strm_lib;
-            strm_lib.open((*begIt).c_str(), std::ios_base::in | std::ios_base::binary);
-            read(strm_lib, matches, scores, sequenceNames, TCoffeeLib());
-            strm_lib.close();
-        }
-    }
+    // Other config alignment
+    Nothing noth;
+    appendSegmentMatches(seqSet, config.semi_global_alignment_pairs, msaOpt.sc, matches, scores, noth, AlignConfig<true, true, true, true>(), GlobalPairwiseLibrary());
 
-    // Include MUMmer segment matches
-    if (!empty(msaOpt.mummerfiles))
-    {
-        typedef typename Iterator<String<std::string> const, Standard>::Type TIter;
-        TIter begIt = begin(msaOpt.mummerfiles, Standard());
-        TIter begItEnd = end(msaOpt.mummerfiles, Standard());
-        for (; begIt != begItEnd; goNext(begIt))
-        {
-            std::ifstream strm_lib;
-            strm_lib.open((*begIt).c_str(), std::ios_base::in | std::ios_base::binary);
-            read(strm_lib, matches, scores, seqSet, sequenceNames, MummerLib());
-            strm_lib.close();
-        }
-    }
-
-    // Include BLAST segment matches
-    if (!empty(msaOpt.blastfiles))
-    {
-        typedef typename Iterator<String<std::string> const, Standard>::Type TIter;
-        TIter begIt = begin(msaOpt.blastfiles, Standard());
-        TIter begItEnd = end(msaOpt.blastfiles, Standard());
-        for (; begIt != begItEnd; goNext(begIt))
-        {
-            std::ifstream strm_lib;
-            strm_lib.open((*begIt).c_str(), std::ios_base::in | std::ios_base::binary);
-            read(strm_lib, matches, scores, sequenceNames, BlastLib());
-            strm_lib.close();
-        }
-    }
 
     std::cout << std::setw(30) << std::left << "Segment-match generation:" << std::setw(10) << std::right << sysTime() - segmentGenerationTime << "  s" << std::endl;
 #ifdef SEQAN_TCOFFEE_DEBUG
