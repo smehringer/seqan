@@ -221,36 +221,6 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
     return (length(fastaIDs) > 0u);
 }
 
-// template <typename TNameSet>
-// bool
-// _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences, TNameSet& fastaIDs, const char *fileName)
-// {
-//     SeqFileIn inFile;
-//     if (!open(inFile, fileName))
-//     {
-//         std::cerr << "Could not open " << fileName << "for reading!" << std::endl;
-//         return false;
-//     }
-
-//     StringSet<String<Iupac>, Owner<>> sequences;
-//     readRecords(fastaIDs, sequences, inFile);
-
-//     // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
-//     resize(minimizer_sequences, length(sequences));
-//     Minimizer mini;
-//     mini.resize(20, 1000);
-//     std::cout << "minimizer: k20, w1000" << std::endl;
-
-//     for (size_t idx = 0; idx < length(sequences); ++idx)
-//         minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
-
-//     std::cout << length(minimizer_sequences[0]) << std::endl;
-//     std::cout << length(minimizer_sequences[1]) << std::endl;
-//     std::cout << length(minimizer_sequences[2]) << std::endl;
-
-//     return (length(fastaIDs) > 0u);
-// }
-
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename TAlphabet, typename TScore>
