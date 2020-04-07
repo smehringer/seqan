@@ -573,84 +573,6 @@ _initScoreMatrix(ArgumentParser& parser, uint64_t const)
     // }
 }
 
-inline void
-_initScoreMatrix(ArgumentParser& parser, Dna5 const)
-{
-    String<char> matrix;
-    getOptionValue(matrix, parser, "matrix");
-    if (isSet(parser, "matrix"))
-    {
-        Score<int, ScoreMatrix<> > sc;
-        loadScoreMatrix(sc, toCString(matrix));
-        _initMsaParams<Dna5>(parser, sc);
-    }
-    else
-    {
-        Score<int> sc;
-        _initMsaParams<Dna5>(parser, sc);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-
-inline void
-_initScoreMatrix(ArgumentParser& parser, Rna5 const)
-{
-    String<char> matrix;
-    getOptionValue(matrix, parser, "matrix");
-    if (isSet(parser, "matrix"))
-    {
-        Score<int, ScoreMatrix<> > sc;
-        loadScoreMatrix(sc, toCString(matrix));
-        _initMsaParams<Rna5>(parser, sc);
-    }
-    else
-    {
-        Score<int> sc;
-        _initMsaParams<Rna5>(parser, sc);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-
-inline void
-_initScoreMatrix(ArgumentParser& parser, Iupac const)
-{
-    String<char> matrix;
-    getOptionValue(matrix, parser, "matrix");
-    if (isSet(parser, "matrix"))
-    {
-        Score<int, ScoreMatrix<> > sc;
-        loadScoreMatrix(sc, toCString(matrix));
-        _initMsaParams<Iupac>(parser, sc);
-    }
-    else
-    {
-        Score<int> sc;
-        _initMsaParams<Iupac>(parser, sc);
-    }
-}
-
-//////////////////////////////////////////////////////////////////////////////////
-
-inline void
-_initScoreMatrix(ArgumentParser& parser, AminoAcid const)
-{
-    String<char> matrix;
-    getOptionValue(matrix, parser, "matrix");
-    if (isSet(parser, "matrix"))
-    {
-        Score<int, ScoreMatrix<> > sc;
-        loadScoreMatrix(sc, toCString(matrix));
-        _initMsaParams<AminoAcid>(parser, sc);
-    }
-    else
-    {
-        Blosum62 sc;
-        _initMsaParams<AminoAcid>(parser, sc);
-    }
-}
-
 void
 _setUpArgumentParser(ArgumentParser & parser)
 {
@@ -807,16 +729,10 @@ int main(int argc, const char *argv [])
     getOptionValue(alphabet, parser, "alphabet");
 
     // Initialize scoring matrices
-    if (alphabet == "dna")
-        _initScoreMatrix(parser, Dna5());
-    else if (alphabet == "rna")
-        _initScoreMatrix(parser, Rna5());
-    else if (alphabet == "iupac")
-        _initScoreMatrix(parser, Iupac());
-    else if (alphabet == "minimizer")
-        _initScoreMatrix(parser, uint64_t());
+    if  (alphabet == "minimizer")
+        _initScoreMatrix(parser, minimizer());
     else
-        _initScoreMatrix(parser, AminoAcid());
+        throw "you need minimizer!";
 
 #ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Total time:" << std::setw(10) << std::right << sysTime() - totalStartTime << "  s" << std::endl;
