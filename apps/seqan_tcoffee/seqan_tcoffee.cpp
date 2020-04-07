@@ -28,6 +28,78 @@ Lesser General Public License for more details.
 
 using namespace seqan;
 
+struct minimizer
+{
+    /*!\name Constructors, destructor and assignment
+     * \{
+     */
+    //!\brief Default constructor. Attention: all operations on a solely default constructed decorator,
+    //!       except assigning a new range, are UB.
+    constexpr minimizer() = default;
+    //!\brief Copy constructor.
+    constexpr minimizer(minimizer const &) = default;
+    //!\brief Copy construction via assignment.
+    constexpr minimizer & operator=(minimizer const &) = default;
+    //!\brief Move constructor.
+    constexpr minimizer(minimizer && rhs) = default;
+    //!\brief Move assignment.
+    constexpr minimizer & operator=(minimizer && rhs) = default;
+    //!\brief Use default deconstructor.
+    ~minimizer() = default;
+
+    //!\brief Copy constructor from uint64_t.
+    constexpr minimizer(uint64_t const v) : value{v} {};
+    //!\brief Copy construction via assignment from uint64_t.
+    constexpr minimizer & operator=(uint64_t const v) { value = v; return *this; };
+    //!\brief Move constructor from uint64_t.
+    constexpr minimizer(uint64_t && v) : value{v} {};
+    //!\brief Move assignment from uint64_t.
+    constexpr minimizer & operator=(uint64_t && v) { value = v; return *this; };
+
+    constexpr minimizer(uint64_t const v, uint64_t const p) : value{v}, position{p} {};
+
+    operator uint64_t() const
+    {
+        return value;
+    }
+
+    // operator unsigned() const
+    // {
+    //     return value;
+    // }
+    //!\}
+
+    uint64_t value{};
+    uint64_t position{};
+
+    constexpr friend bool operator==(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value == rhs.value;
+    }
+
+    constexpr friend bool operator!=(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value != rhs.value;
+    }
+
+    constexpr friend bool operator<(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value < rhs.value;
+    }
+    constexpr friend bool operator<=(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value <= rhs.value;
+    }
+    constexpr friend bool operator>(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value > rhs.value;
+    }
+    constexpr friend bool operator>=(minimizer const & lhs, minimizer const & rhs) noexcept
+    {
+        return lhs.value >= rhs.value;
+    }
+};
+
 struct Minimizer
 {
 public:
@@ -85,18 +157,16 @@ public:
         seqan::resize(revCompShape, k);
     }
 
-    std::tuple<String<uint64_t>, String<uint64_t>>  getMinimizer(String<Dna> const & text)
+    String<minimizer>  getMinimizer(String<Dna> const & text)
     {
         if (k > seqan::length(text))
-            return {String<uint64_t>{}, String<uint64_t>{}};
+            return String<minimizer>{};
 
         uint64_t possible = seqan::length(text) > w ? seqan::length(text) - w + 1 : 1;
         uint32_t windowKmers = w - k + 1;
 
-        String<uint64_t> kmerHashes{};
-        String<uint64_t> kmerHashPoss{};
+        String<minimizer> kmerHashes{};
         reserve(kmerHashes, possible); // maybe rather reserve to expected?
-        reserve(kmerHashPoss, possible); // maybe rather reserve to expected?
 
         // Stores hash, begin and end for all k-mers in the window
         std::deque<uint64_t> windowValues;
@@ -116,12 +186,12 @@ public:
         }
 
         auto min = std::min_element(std::begin(windowValues), std::end(windowValues));
-        appendValue(kmerHashes, *min);
-        appendValue(kmerHashPoss, std::distance(std::begin(windowValues), min));
+        appendValue(kmerHashes, minimizer{*min, static_cast<uint64_t>(std::distance(std::begin(windowValues), min))});
+        // appendValue(kmerHashPoss, );
 
         // For the following windows, we remove the first window k-mer (is now not in window) and add the new k-mer
         // that results from the window shifting
-        uint64_t current_pos{kmerHashPoss[0]};
+        uint64_t current_pos{kmerHashes[0].position};
         for (uint64_t pos = 1; pos < possible; ++pos)
         {
             windowValues.pop_front();
@@ -134,21 +204,12 @@ public:
 
             if (current_pos != pos + std::distance(std::begin(windowValues), min))
             {
-                appendValue(kmerHashes, *min);
                 current_pos = pos + std::distance(std::begin(windowValues), min);
-                appendValue(kmerHashPoss, current_pos);
+                appendValue(kmerHashes, minimizer{*min, current_pos});
             }
         }
 
-        for (size_t i = 0; i < seqan::length(kmerHashPoss) - 1; ++i)
-        {
-            if(kmerHashPoss[i] > kmerHashPoss[i + 1])
-            {
-                std::cerr << kmerHashPoss[i] << " at " << i << " is larger than " << kmerHashPoss[i + 1] << "\n";
-            }
-        }
-
-        return {kmerHashes, kmerHashPoss};
+        return kmerHashes;
     }
 };
 
@@ -167,7 +228,7 @@ _addVersion(ArgumentParser & parser)
 
 template <typename TSeqSet, typename TNameSet>
 bool
-_loadSequences(TSeqSet& sequences, StringSet<String<uint64_t>, Owner<>> &, TNameSet& fastaIDs, const char *fileName)
+_loadSequences(TSeqSet& sequences, TNameSet& fastaIDs, const char *fileName)
 {
     SeqFileIn inFile;
     if (!open(inFile, fileName))
@@ -181,9 +242,9 @@ _loadSequences(TSeqSet& sequences, StringSet<String<uint64_t>, Owner<>> &, TName
 
 template <typename TNameSet>
 bool
-_loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
-               StringSet<String<uint64_t>, Owner<>> & minimizer_pos_sequences,
-               TNameSet& fastaIDs, const char *fileName)
+_loadSequences(StringSet<String<minimizer>, Owner<>> & minimizer_sequences,
+               TNameSet& fastaIDs,
+               const char *fileName)
 {
     SeqFileIn inFile;
     if (!open(inFile, fileName))
@@ -209,12 +270,11 @@ _loadSequences(StringSet<String<uint64_t>, Owner<>> & minimizer_sequences,
 
     // compute minimizers per sequence and store the corresponding chain in minimizer_sequences
     resize(minimizer_sequences, length(sequences));
-    resize(minimizer_pos_sequences, length(sequences));
     Minimizer mini;
     mini.resize(12, 20);
     for (size_t idx = 0; idx < length(sequences); ++idx)
     {
-        std::tie(minimizer_sequences[idx], minimizer_pos_sequences[idx]) = mini.getMinimizer(sequences[idx]);
+        minimizer_sequences[idx] = mini.getMinimizer(sequences[idx]);
         std::cout << length(minimizer_sequences[idx]) << std::endl;
     }
 
@@ -240,12 +300,10 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
     segment_generation_config<TSize> seg_gen_config;
     seg_gen_config.seqfiles = msaOpt.seqfiles;
 
-    StringSet<String<uint64_t>, Owner<>> minimizer_pos_set;
-
     if (length(msaOpt.seqfiles) == 1)
     {
         // compute MSA on all pairs of pairs in multi fasta file
-        _loadSequences(sequenceSet, minimizer_pos_set, sequenceNames, msaOpt.seqfiles[0].c_str());
+        _loadSequences(sequenceSet, sequenceNames, msaOpt.seqfiles[0].c_str());
         selectPairs(sequenceSet, seg_gen_config.global_alignment_pairs); // all-to-all
     }
     else // multi multi-record fasta files
@@ -297,13 +355,13 @@ customizedMsaAlignment(MsaOptions<TAlphabet, TScore> const& msaOpt)
         if (regStart == 0)
             outs << "0"; // if it is the very first minimizer, include beginning of the sequence
         else
-            outs << minimizer_pos_set[id][regStart];
+            outs << sequenceSet[id][regStart].position;
         outs << ",";
         auto regEnd = fragmentBegin(gAlign, *it) + fragmentLength(gAlign, *it);
-        if (regEnd >= length(minimizer_pos_set[id]))
+        if (regEnd >= length(sequenceSet[id]))
             outs << "end";
         else
-            outs << minimizer_pos_set[id][regEnd];
+            outs << sequenceSet[id][regEnd].position;
         outs << ")";
         outs << "\", group = ";
         outs << id;
@@ -510,7 +568,7 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
     // Evaluation mode?
     if (isSet(parser, "infile"))
     {
-        evaluateAlignment(msaOpt);
+        throw "evaluation mode not available.";
     }
     else
     { // or alignment mode?
@@ -525,7 +583,7 @@ _initMsaParams(ArgumentParser& parser, TScore& scMat)
 
 //////////////////////////////////////////////////////////////////////////////////
 inline void
-_initScoreMatrix(ArgumentParser& parser, uint64_t const)
+_initScoreMatrix(ArgumentParser& parser, minimizer const)
 {
     // String<char> matrix;
     // getOptionValue(matrix, parser, "matrix");
@@ -539,7 +597,7 @@ _initScoreMatrix(ArgumentParser& parser, uint64_t const)
     // {
     std::cout << "i am here" << std::endl;
         Score<int> sc;
-        _initMsaParams<uint64_t>(parser, sc);
+        _initMsaParams<minimizer>(parser, sc);
     // }
 }
 
