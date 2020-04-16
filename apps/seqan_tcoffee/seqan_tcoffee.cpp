@@ -63,12 +63,6 @@ struct minimizer
         return value;
     }
 
-    // operator unsigned() const
-    // {
-    //     return value;
-    // }
-    //!\}
-
     uint64_t value{};
     uint64_t position{};
 
@@ -185,7 +179,8 @@ public:
             ++it;
         }
 
-        auto min = std::min_element(std::begin(windowValues), std::end(windowValues));
+        auto less_or_equal_compare = [] (auto const & a, auto const & b) { return a <= b; };
+        auto min = std::min_element(std::begin(windowValues), std::end(windowValues), less_or_equal_compare);
         appendValue(kmerHashes, minimizer{*min, static_cast<uint64_t>(std::distance(std::begin(windowValues), min))});
         // appendValue(kmerHashPoss, );
 
@@ -200,19 +195,27 @@ public:
             windowValues.push_back(kmerHash);
             ++it;
 
-            min = std::min_element(std::begin(windowValues), std::end(windowValues));
-
-            if (current_pos != pos + std::distance(std::begin(windowValues), min))
+            if (kmerHash < back(kmerHashes).value)
             {
-                current_pos = pos + std::distance(std::begin(windowValues), min);
-                appendValue(kmerHashes, minimizer{*min, current_pos});
+                current_pos = pos + windowValues.size() - 1; // at end
+                appendValue(kmerHashes, minimizer{kmerHash, current_pos});
+
+            }
+            else if (current_pos == pos - 1) // minimum was at the beginning and went out of scope
+            {
+                min = std::min_element(std::begin(windowValues), std::end(windowValues), less_or_equal_compare);
+
+                if (current_pos != pos + std::distance(std::begin(windowValues), min))
+                {
+                    current_pos = pos + std::distance(std::begin(windowValues), min);
+                    appendValue(kmerHashes, minimizer{*min, current_pos});
+                }
             }
         }
 
         return kmerHashes;
     }
 };
-
 
 using namespace seqan;
 
