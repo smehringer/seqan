@@ -525,6 +525,74 @@ writeRecords(
     write(iter, "}\n");
 }
 
+template <typename TTarget, typename TSpec, typename TNodeAttributes, typename TEdgeAttributes, typename TNames, typename TSeq>
+void
+writeRecords(
+    TTarget & target,
+    Graph<TSpec> const& g,
+    TNodeAttributes const& nodeMap,
+    TEdgeAttributes const& edgeMap,
+    TNames const & names,
+    TSeq const & seq_lenths,
+    DotDrawing)
+{
+    typedef Graph<TSpec> TGraph;
+    typedef typename VertexDescriptor<TGraph>::Type TVertexDescriptor;
+    typename DirectionIterator<TTarget, Output>::Type iter = directionIterator(target, Output());
+
+    _writeGraphType(iter,g,DotDrawing());
+    write(iter, " G {\n");
+    writeValue(iter, '\n');
+    write(iter, "/* Graph Attributes */\n");
+    write(iter, "graph [rankdir = LR];\n");
+    writeValue(iter, '\n');
+    write(iter, "/* Node Attributes */\n");
+    write(iter, "node [shape = rectangle, fillcolor = white, style = filled, fontname = \"Times-Italic\"];\n");
+    writeValue(iter, '\n');
+    write(iter, "/* Edge Attributes */\n");
+    write(iter, "edge [fontname = \"Times-Italic\", arrowsize = 0.75, fontsize = 16];\n");
+    writeValue(iter, '\n');
+    write(iter, "/* Sequence Lengths */\n");
+    for (size_t i = 0; i < length(names); ++i)
+    {
+        write(iter, names[i]);
+        writeValue(iter, ' ');
+        write(iter, seq_lenths[i]);
+        writeValue(iter, '\n');
+    }
+    writeValue(iter, '\n');
+
+    write(iter, "/* Nodes */\n");
+    typedef typename Iterator<TGraph, VertexIterator>::Type TConstIter;
+    TConstIter it(g);
+    for(;!atEnd(it);++it) {
+        appendNumber(iter, (int)*it);
+        write(iter, " [");
+        write(iter, getProperty(nodeMap, *it));
+        write(iter, "];\n");
+    }
+    writeValue(iter, '\n');
+
+    write(iter, "/* Edges */\n");
+    typedef typename Iterator<TGraph, EdgeIterator>::Type TConstEdIter;
+    TConstEdIter itEd(g);
+    for(;!atEnd(itEd);++itEd) {
+        TVertexDescriptor sc = sourceVertex(itEd);
+        TVertexDescriptor tr = targetVertex(itEd);
+        appendNumber(iter, sc);
+        _writeEdgeType(iter, g, DotDrawing());
+        appendNumber(iter, tr);
+        write(iter, " [");
+        write(iter, getProperty(edgeMap, *itEd));
+        write(iter, "];\n");
+    }
+    writeValue(iter, '\n');
+
+    _writeGraphFooter(iter,g,DotDrawing());
+
+    write(iter, "}\n");
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 template <typename TFile, typename TSpec, typename TNodeAttributes>
