@@ -556,7 +556,7 @@ writeRecords(
     for (size_t i = 0; i < length(names); ++i)
     {
         write(iter, names[i]);
-        writeValue(iter, ' ');
+        writeValue(iter, '\t');
         write(iter, seq_lenths[i]);
         writeValue(iter, '\n');
     }
