@@ -145,6 +145,8 @@ struct segment_generation_config
     String<TSize> global_alignment_pairs;
     String<TSize> local_alignment_pairs;
     String<TSize> semi_global_alignment_pairs;
+
+    String<double> distanceMatrix;
 };
 
 // --------------------------------------------------------------------------
@@ -440,8 +442,12 @@ std::cout << "Start" << std::endl;
     else
     {
         // Check if we have a valid distance matrix
-        if (empty(distanceMatrix))
+
+        if (!empty(config.distanceMatrix))
+            distanceMatrix = config.distanceMatrix;
+        else if (empty(distanceMatrix))
             getDistanceMatrix(g, distanceMatrix, KmerDistance());
+
         // Get distance matrix values for a precision of 10 decimal digits.
         for (unsigned i = 0; i < length(distanceMatrix); ++i)
             distanceMatrix[i] = static_cast<int64_t>(distanceMatrix[i] * 1e10) / 1e10;
