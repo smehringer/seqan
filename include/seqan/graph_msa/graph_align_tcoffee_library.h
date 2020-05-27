@@ -967,6 +967,38 @@ _recordScores(TScoreValues & scores,
 
 //////////////////////////////////////////////////////////////////////////////
 
+template<typename TString, typename TSpec, typename TScore, typename TSegmentMatches, typename TScoreValues>
+inline void
+append_all_to_all_fragments(StringSet<TString, Dependent<TSpec> > const& sequenceSet,
+                            TScore const& score_type,
+                            TSegmentMatches& matches,
+                            TScoreValues& scores)
+{
+    typedef StringSet<TString, Dependent<TSpec> > TStringSet;
+    typedef typename Size<TStringSet>::Type TSize;
+
+    // Pairwise alignments
+    for (size_t i = 0; i < length(sequenceSet); ++i)
+    {
+        for (size_t j = 0; j < length(sequenceSet); ++j)
+        {
+            auto & seq1 = sequenceSet[i];
+            auto & seq2 = sequenceSet[j];
+
+            TSize from = length(matches);
+
+            for (size_t p1 = 0; p1 < length(seq1); ++p1)
+                for (size_t p2 = 0; p2 < length(seq2); ++p2)
+                    if (seq1[p1] == seq2[p2])
+                        appendValue(matches, Fragment<>(i, p1, j, p2, 1));
+
+            TSize to = length(matches);
+            _recordScores(scores, 10, from, to); // will be rescored anyway ?!?!?!?!
+        }
+    }
+}
+
+
 template<typename TString, typename TSpec, typename TSize2, typename TSpec2, typename TScore, typename TSegmentMatches, typename TScoreValues, typename TDistance, typename TAlignConfig>
 inline void
 appendSegmentMatches(StringSet<TString, Dependent<TSpec> > const& str,

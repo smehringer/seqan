@@ -377,6 +377,9 @@ std::cout << "Start" << std::endl;
     typedef String<TScoreValue> TScoreValues;
     TScoreValues scores;
 
+    // all-to-all no segment matches
+    // append_all_to_all_fragments(seqSet, msaOpt.sc, matches, scores);
+
     // Global alignment
     if (msaOpt.isDefaultPairwiseAlignment || msaOpt.pairwiseAlignmentMethod == 1) // unbanded
     {
