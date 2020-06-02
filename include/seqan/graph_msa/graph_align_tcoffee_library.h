@@ -976,24 +976,29 @@ append_all_to_all_fragments(StringSet<TString, Dependent<TSpec> > const& sequenc
 {
     typedef StringSet<TString, Dependent<TSpec> > TStringSet;
     typedef typename Size<TStringSet>::Type TSize;
+    typedef typename Value<TString>::Type TValue;
 
-    // Pairwise alignments
+    // create hash_map with positions where minimizers can be found
+    std::unordered_map<uint64_t, std::vector<std::pair<size_t, size_t>>> hash_map{};
     for (size_t i = 0; i < length(sequenceSet); ++i)
+        for (size_t p1 = 0; p1 < length(sequenceSet[i]); ++p1)
+            hash_map[sequenceSet[i][p1].value].emplace_back(i, p1);
+
+    // Traverse hash map and create fragments
+    for (auto & [minimizer, id_pos_pairs] : hash_map)
     {
-        for (size_t j = 0; j < length(sequenceSet); ++j)
+        for (size_t i = 0; i < id_pos_pairs.size(); ++i)
         {
-            auto & seq1 = sequenceSet[i];
-            auto & seq2 = sequenceSet[j];
+            for (size_t j = i; j < id_pos_pairs.size(); ++j)
+            {
+                TSize const from = length(matches);
 
-            TSize from = length(matches);
+                appendValue(matches, Fragment<>(id_pos_pairs[i].first, id_pos_pairs[i].second,
+                                                id_pos_pairs[j].first, id_pos_pairs[j].second, 1));
 
-            for (size_t p1 = 0; p1 < length(seq1); ++p1)
-                for (size_t p2 = 0; p2 < length(seq2); ++p2)
-                    if (seq1[p1] == seq2[p2])
-                        appendValue(matches, Fragment<>(i, p1, j, p2, 1));
-
-            TSize to = length(matches);
-            _recordScores(scores, 10, from, to); // will be rescored anyway ?!?!?!?!
+                TSize const to = length(matches);
+                _recordScores(scores, 10, from, to); // will be rescored anyway ?!?!?!?!
+            }
         }
     }
 }
