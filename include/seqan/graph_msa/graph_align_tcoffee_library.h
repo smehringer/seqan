@@ -989,15 +989,18 @@ append_all_to_all_fragments(StringSet<TString, Dependent<TSpec> > const& sequenc
     {
         for (size_t i = 0; i < id_pos_pairs.size(); ++i)
         {
-            for (size_t j = i; j < id_pos_pairs.size(); ++j)
+            for (size_t j = i + 1; j < id_pos_pairs.size(); ++j)
             {
-                TSize const from = length(matches);
+                if (id_pos_pairs[i].first != id_pos_pairs[j].first) // do not include matches within the same seq
+                {
+                    TSize const from = length(matches);
 
-                appendValue(matches, Fragment<>(id_pos_pairs[i].first, id_pos_pairs[i].second,
-                                                id_pos_pairs[j].first, id_pos_pairs[j].second, 1));
+                    appendValue(matches, Fragment<>(id_pos_pairs[i].first, id_pos_pairs[i].second,
+                                                    id_pos_pairs[j].first, id_pos_pairs[j].second, 1));
 
-                TSize const to = length(matches);
-                _recordScores(scores, 10, from, to); // will be rescored anyway ?!?!?!?!
+                    TSize const to = length(matches);
+                    _recordScores(scores, 10, from, to); // will be rescored anyway ?!?!?!?!
+                }
             }
         }
     }
