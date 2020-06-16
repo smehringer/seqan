@@ -77,28 +77,27 @@ _roundToSignificantFigures(double num, int n)
  * @param[out] tree The guide tree.
  */
 
-template<typename TValue, typename TStringSpec, typename TCargo, typename TSpec>
+template<typename TMatrix, typename TCargo, typename TSpec>
 inline void
-njTree(String<TValue, TStringSpec> const & matIn,
+njTree(TMatrix & mat,
        Graph<Tree<TCargo, TSpec> >& g)
 {
-    typedef String<TValue, TStringSpec> TMatrix;
     typedef typename Size<TMatrix>::Type TSize;
     typedef Graph<Tree<TCargo, TSpec> > TGraph;
     typedef typename VertexDescriptor<TGraph>::Type TVertexDescriptor;
 
     TVertexDescriptor nilVertex = getNil<TVertexDescriptor>();
-    TSize nseq = (TSize) std::sqrt((double)length(matIn));
+    TSize nseq = (TSize) std::sqrt((double)length(mat));
 
     // Assert that the input matrix has no negative values.
 // #if SEQAN_ENABLE_DEBUG
-//     for (unsigned i = 0; i < length(matIn); ++i)
-//         SEQAN_ASSERT_GEQ_MSG(matIn[i], 0, "i = %u", i);
+//     for (unsigned i = 0; i < length(mat); ++i)
+//         SEQAN_ASSERT_GEQ_MSG(mat[i], 0, "i = %u", i);
 // #endif  // #if SEQAN_ENABLE_DEBUG
 
     //for(TSize i=0;i<nseq;++i) {
     //    for(TSize j=0;j<nseq;++j) {
-    //        std::cout << getValue(matIn, i*nseq+j) << ",";
+    //        std::cout << getValue(mat, i*nseq+j) << ",";
     //    }
     //    std::cout << std::endl;
     //}
@@ -115,24 +114,17 @@ njTree(String<TValue, TStringSpec> const & matIn,
         TVertexDescriptor v1 = addVertex(g);
         TVertexDescriptor v2 = addVertex(g);
         TVertexDescriptor internalVertex = addVertex(g);
-        addEdge(g, internalVertex, v1, (TCargo) _roundToSignificantFigures(matIn[1] / 2.0, 5));
-        addEdge(g, internalVertex, v2, (TCargo) _roundToSignificantFigures(matIn[1] / 2.0, 5));
+        addEdge(g, internalVertex, v1, (TCargo) _roundToSignificantFigures(mat[1] / 2.0, 5));
+        addEdge(g, internalVertex, v2, (TCargo) _roundToSignificantFigures(mat[1] / 2.0, 5));
         g.data_root = internalVertex;
         return;
     }
 
-    // Create a normalized copy of matIn with fixed point numbers, precision of 10 digits.
-    TValue normFactor = 0;
-    for (unsigned i = 0; i < length(matIn); ++i)
-        normFactor = std::max(normFactor, matIn[i]);
-    // In the case that normFactor is 0 (e.g. all sequences equal) then fix it to 1 so the normalization
-    // does not break.
-    if (!normFactor)
-        normFactor = 1;
-    String<int64_t> mat;
-    resize(mat, length(matIn));
+    // Create a normalized copy of mat with fixed point numbers, precision of 10 digits.
+    double normFactor = 1.0;
+
     for (unsigned i = 0; i < length(mat); ++i)
-        mat[i] = static_cast<int64_t>(10000000.0 * ((double)(matIn[i]) / (double)(normFactor)));
+        mat[i] = static_cast<int64_t>(10000000.0 * ((double)(mat[i]) / normFactor));
 
     // First initialization
     String<int64_t> av;    // Average branch length to a combined node

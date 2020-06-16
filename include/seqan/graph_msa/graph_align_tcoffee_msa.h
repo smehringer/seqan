@@ -138,6 +138,39 @@ public:
     {}
 };
 
+struct map_distance_matrix : std::unordered_map<size_t, double>
+{
+    // i = first = row , j = second = column
+    // 0 1 2 3 4     i * nseq + j
+    // 5 6 7 8 9
+    //
+    using base_t = std::unordered_map<size_t, double>;
+    using value_type = double;
+    using size_type = size_t;
+    using reference = value_type;
+
+    // number of sequences stored in this matrix
+    size_type nseq{};
+
+    double dummy{1.0}; // dummy distance is always maximum distance
+
+    reference & operator[](size_type index)
+    {
+        dummy = 1.0; // reset in case it was changed
+        auto it = this->find(index);
+
+        if (it == this->end())
+            return dummy;
+        else
+            return it->second;
+    }
+};
+
+auto length(map_distance_matrix const & m)
+{
+    return m.nseq * m.nseq;
+}
+
 template <typename TSize>
 struct segment_generation_config
 {
@@ -146,7 +179,7 @@ struct segment_generation_config
     String<TSize> local_alignment_pairs;
     String<TSize> semi_global_alignment_pairs;
 
-    String<double> distanceMatrix;
+    map_distance_matrix distanceMatrix;
 };
 
 // --------------------------------------------------------------------------
@@ -336,7 +369,7 @@ template <typename TStringSet, typename TCargo, typename TSpec, typename TString
 void globalMsaAlignment(Graph<Alignment<TStringSet, TCargo, TSpec> > & gAlign,
                         TStringSet1 & sequenceSet,
                         TNames & sequenceNames,
-                        segment_generation_config<Tsize> const & config,
+                        segment_generation_config<Tsize> & config,
                         MsaOptions<TAlphabet, TScore> const & msaOpt)
 {
     typedef typename Value<TScore>::Type TScoreValue;
@@ -366,10 +399,6 @@ std::cout << "Start" << std::endl;
 #endif
 
     double segmentGenerationTime = sysTime();
-
-    // Set-up a distance matrix
-    typedef String<TDistanceValue> TDistanceMatrix;
-    TDistanceMatrix distanceMatrix;
 
     // Containers for segment matches and corresponding scores
     typedef String<Fragment<> > TFragmentString;
@@ -413,27 +442,11 @@ std::cout << "Start" << std::endl;
     else
     {
         // Check if we have a valid distance matrix
+        assert(!config.distanceMatrix.empty());
 
-        if (!empty(config.distanceMatrix))
-            distanceMatrix = config.distanceMatrix;
-        else if (empty(distanceMatrix))
-            getDistanceMatrix(g, distanceMatrix, KmerDistance());
-
-        // Get distance matrix values for a precision of 10 decimal digits.
-        for (unsigned i = 0; i < length(distanceMatrix); ++i)
-            distanceMatrix[i] = static_cast<int64_t>(distanceMatrix[i] * 1e10) / 1e10;
-        if (msaOpt.build == 0)
-            njTree(distanceMatrix, guideTree);
-        else if (msaOpt.build == 1)
-            upgmaTree(distanceMatrix, guideTree, UpgmaMin());
-        else if (msaOpt.build == 2)
-            upgmaTree(distanceMatrix, guideTree, UpgmaMax());
-        else if (msaOpt.build == 3)
-            upgmaTree(distanceMatrix, guideTree, UpgmaAvg());
-        else if (msaOpt.build == 4)
-            upgmaTree(distanceMatrix, guideTree, UpgmaWeightAvg());
+        njTree(config.distanceMatrix, guideTree);
     }
-    clear(distanceMatrix);
+    config.distanceMatrix.clear();
 
 #ifdef SEQAN_TCOFFEE_DEBUG
     std::cout << std::setw(30) << std::left << "Guide-tree:" << std::setw(10) << std::right << sysTime() - guideTreeTime << "  s" << std::endl;
