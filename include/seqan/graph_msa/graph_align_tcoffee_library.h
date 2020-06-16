@@ -967,16 +967,14 @@ _recordScores(TScoreValues & scores,
 
 //////////////////////////////////////////////////////////////////////////////
 
-template<typename TString, typename TSpec, typename TScore, typename TSegmentMatches, typename TScoreValues>
+template<typename TString, typename TSpec, typename TSegmentMatches, typename TScoreValues>
 inline void
 append_all_to_all_fragments(StringSet<TString, Dependent<TSpec> > const& sequenceSet,
-                            TScore const& score_type,
                             TSegmentMatches& matches,
                             TScoreValues& scores)
 {
     typedef StringSet<TString, Dependent<TSpec> > TStringSet;
     typedef typename Size<TStringSet>::Type TSize;
-    typedef typename Value<TString>::Type TValue;
 
     // create hash_map with positions where minimizers can be found
     std::unordered_map<uint64_t, std::vector<std::pair<size_t, size_t>>> hash_map{};
@@ -987,6 +985,7 @@ append_all_to_all_fragments(StringSet<TString, Dependent<TSpec> > const& sequenc
     // Traverse hash map and create fragments
     for (auto & [minimizer, id_pos_pairs] : hash_map)
     {
+        (void)minimizer;
         for (size_t i = 0; i < id_pos_pairs.size(); ++i)
         {
             for (size_t j = i + 1; j < id_pos_pairs.size(); ++j)
