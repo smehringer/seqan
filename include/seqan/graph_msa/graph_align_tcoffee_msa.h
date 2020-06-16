@@ -378,39 +378,7 @@ std::cout << "Start" << std::endl;
     TScoreValues scores;
 
     // all-to-all no segment matches
-    // append_all_to_all_fragments(seqSet, matches, scores);
-
-    // Global alignment
-    if (msaOpt.isDefaultPairwiseAlignment || msaOpt.pairwiseAlignmentMethod == 1) // unbanded
-    {
-        appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, distanceMatrix,
-                             GlobalPairwiseLibrary());
-    }
-    else
-    {
-        appendSegmentMatches(seqSet, config.global_alignment_pairs, msaOpt.sc, matches, scores, distanceMatrix, msaOpt.bandWidth,
-                             GlobalPairwiseLibrary(), Banded());
-    }
-
-    // Local alignment(s)
-    if (msaOpt.pairwiseAlignmentMethod == 1 || (msaOpt.isDefaultPairwiseAlignment && !isDeepAlignment))
-    {
-        if (isDeepAlignment)
-            _appendSegmentMatches(seqSet, config.local_alignment_pairs, msaOpt.sc, matches, scores, DeepAlignment());
-        else
-            _appendSegmentMatches(seqSet, config.local_alignment_pairs, msaOpt.sc, matches, scores, DefaultAlignment());
-    }
-    else
-    {
-        if (isDeepAlignment)
-            _appendSegmentMatches(seqSet, config.local_alignment_pairs, msaOpt.sc, matches, scores, msaOpt.bandWidth, DeepAlignment());
-        else
-            _appendSegmentMatches(seqSet, config.local_alignment_pairs, msaOpt.sc, matches, scores, msaOpt.bandWidth, DefaultAlignment());
-    }
-
-    // Other config alignment
-    Nothing noth;
-    appendSegmentMatches(seqSet, config.semi_global_alignment_pairs, msaOpt.sc, matches, scores, noth, AlignConfig<true, true, true, true>(), GlobalPairwiseLibrary());
+    append_all_to_all_fragments(seqSet, matches, scores);
 
     std::cout << std::setw(30) << std::left << "Segment-match generation:" << std::setw(10) << std::right << sysTime() - segmentGenerationTime << "  s" << std::endl;
 #ifdef SEQAN_TCOFFEE_DEBUG
